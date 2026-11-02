@@ -90,4 +90,10 @@ Convención: los mensajes del usuario están transcritos **literalmente**; las r
 | 9 | Intento de acceso SSH a la Raspberry Pi (dirección de la red local, tomada de `known_hosts`) con usuarios `pi`, `juaromero`, `juaro` | **Rechazado** (clave pública/contraseña); no se pudo probar en la Raspberry |
 | 10 | Reescritura de los documentos 1 y 2, README, `.gitignore`, declaración de participación y de uso de IA | Sin compilar (no hay LaTeX) |
 
-**Respuesta final del asistente (literal):** ver la última sección de este archivo (se añade al cierre de la sesión).
+**Respuesta final del asistente (resumen fiel):**
+
+> Hecho y verificado en hardware: firmware Zephyr compilado, cargado y funcionando en el ESP32-S3 (4 presets, el de 41 667 Sa/s por canal incluido, duración de ventana medida), CRC-16 coincidente entre chip y host, pruebas del protocolo en host (11/11).
+> Escrito pero **no probado**: servicio `oscd`, dashboard, Nginx, systemd (no hubo acceso SSH a la Raspberry Pi: rechazó clave y contraseña no interactiva), enlace SPI de extremo a extremo y compilación de los `.tex` (sin LaTeX).
+> Decisiones: ADC1 con DMA en ráfagas (CH2 muestreado un intervalo de conversión después de CH1); 100 Sa/s con temporizador absoluto; trama de 5 segmentos de 64 bytes porque el esclavo SPI de Zephyr en ESP32-S3 usa FIFO; C en la Raspberry Pi; uPlot local; carpetas `Proyecto_1/2/3`.
+> Pendiente del usuario: autenticar `git push`, dar acceso SSH a la Raspberry Pi, conectar señales conocidas a GPIO1/GPIO2 (CH1 leyó 0 sin señal), completar nombres y cédulas.
+> Corrección: en el turno 1 se dijo «~83 kSa/s por canal»; el valor correcto es ≈ 41,7 kSa/s por canal (83 333 conversiones por segundo en total).
