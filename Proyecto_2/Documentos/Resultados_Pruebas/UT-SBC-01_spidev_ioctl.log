@@ -1,0 +1,21 @@
+Prueba: UT-SBC-01 - configuracion de spidev y latencia del ioctl (SIN ESP32-S3 conectado, MISO flotante)
+Fecha: 2026-11-02   Equipo: Raspberry Pi 4 Model B Rev 1.2, kernel 6.18.50+rpt-rpi-v8 (aarch64)
+Comando: ./oscd --bench 5 --bench-secs 3 --speed <Hz> --gap-us 150   (solo se muestran las lineas spidev y ioctl_us)
+
+== solicitado 1000000 Hz
+spidev /dev/spidev0.0: modo=0 bits=8 velocidad_max=1000000 Hz
+BENCH transacciones=3900  ioctl_us avg=590.5 min=588.0 max=625.3  (t_reloj_teorico=512.0 us)
+== solicitado 8000000 Hz
+spidev /dev/spidev0.0: modo=0 bits=8 velocidad_max=8000000 Hz
+BENCH transacciones=10605  ioctl_us avg=96.5 min=85.8 max=146.9  (t_reloj_teorico=64.0 us)
+== solicitado 15625000 Hz
+spidev /dev/spidev0.0: modo=0 bits=8 velocidad_max=15625000 Hz
+BENCH transacciones=12240  ioctl_us avg=58.7 min=57.2 max=101.7  (t_reloj_teorico=32.8 us)
+== solicitado 20000000 Hz
+spidev /dev/spidev0.0: modo=0 bits=8 velocidad_max=20000000 Hz
+BENCH transacciones=12555  ioctl_us avg=52.6 min=44.6 max=111.8  (t_reloj_teorico=25.6 us)
+== solicitado 31250000 Hz
+spidev /dev/spidev0.0: modo=0 bits=8 velocidad_max=31250000 Hz
+BENCH transacciones=13860  ioctl_us avg=29.5 min=27.8 max=104.2  (t_reloj_teorico=16.4 us)
+
+Resultado: modo 0 y 8 bits confirmados. El reloj efectivo NO esta medido (requiere analizador logico).

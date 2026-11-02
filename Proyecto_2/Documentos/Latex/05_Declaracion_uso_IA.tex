@@ -1,0 +1,84 @@
+\documentclass[12pt,a4paper]{article}
+\input{preambulo}
+\input{portada}
+
+\begin{document}
+
+\portada{Documento 5: Declaración de uso de inteligencia artificial}
+
+\tableofcontents
+\newpage
+
+\section{Modelo y herramienta}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.4cm} p{11.6cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Valor} \\
+\midrule
+Asistente & Claude (Anthropic), modelo \textbf{Claude Sonnet 5.5} (\texttt{claude-sonnet-5-5}) \\
+Herramienta & \textbf{Claude Code} (CLI), con acceso a archivos, PowerShell, WSL (Ubuntu), SSH a la Raspberry Pi y lectura de páginas web \\
+Periodo & 1 de noviembre de 2026 en adelante (sesión 1) \\
+Usuario & Integrante responsable del repositorio \\
+\bottomrule
+\end{tabular}
+\caption{Datos de la herramienta de IA.}
+\end{table}
+
+\section{Tareas en las que se usó la IA}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.2cm} p{6.4cm} p{5.4cm}@{}}
+\toprule
+\textbf{Tarea} & \textbf{Qué hizo la IA} & \textbf{Qué hicieron las personas} \\
+\midrule
+Revisión de la documentación inicial & Leyó los dos documentos \LaTeX{} y el enunciado y listó la información faltante & Respondió y fijó las decisiones (placa, pines, Zephyr, repositorio, roles) \\
+Protocolo SPI & Propuso el formato de segmentos de 64 bytes tras comprobar en el código de Zephyr que el esclavo del ESP32-S3 usa FIFO (64 B por CS) & Aprobar y ajustar \\
+Firmware del ESP32-S3 & Escribió el código (ADC con DMA, esclavo SPI, monitor serie), el overlay y la configuración; compiló y cargó la placa & Proveer entorno y hardware; revisar \\
+Software de la Raspberry Pi & Escribió el servicio en C, el dashboard, la configuración de Nginx y systemd; lo compiló, instaló y probó por SSH & Proveer acceso; revisar; conectar el ESP32-S3 \\
+Documentación & Reescribió y reorganizó los documentos en \LaTeX{} y los README & Revisar, completar nombres y cédulas, compilar \\
+Pruebas & Diseñó la estrategia y ejecutó las pruebas que no requieren el ESP32-S3 conectado a la Raspberry Pi & Ejecutar las pruebas con instrumentos y señales reales \\
+Repositorio & Creó la estructura de carpetas, el \texttt{.gitignore} y los commits & Autenticar y publicar en GitHub \\
+\bottomrule
+\end{tabular}
+\caption{Uso de la IA por tarea.}
+\end{table}
+
+\section{Cómo se verificó el resultado}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.6cm} p{7.4cm} p{4.0cm}@{}}
+\toprule
+\textbf{Elemento} & \textbf{Verificación realizada} & \textbf{Alcance} \\
+\midrule
+Firmware ESP32-S3 & Compilación sin errores; carga con verificación de hash; lectura del monitor serie en la placa real & Ejecuta, adquiere y mide tiempos en los 4 presets \\
+Tiempos de ventana & Medidos en el chip con el contador de ciclos y comparados con la teoría & Parcial: falta confirmar $f_s$ con señal conocida \\
+CRC-16 & Vector \texttt{"123456789"} $\rightarrow$ \texttt{0x29B1} en el ESP32-S3 y en la Raspberry Pi & Verificado \\
+Protocolo del lado Raspberry Pi & 11 comprobaciones automáticas en el host y en la propia Raspberry Pi & Verificado \\
+\texttt{spidev}, servicio, Nginx, API, systemd & Ejecutados en la Raspberry Pi 4 con ventanas sintéticas (modo \texttt{--demo}); mediciones de HTTP, escritura atómica, cadencia de refresco y reinicio & Verificado sin ESP32-S3 \\
+Dashboard en el navegador & \textbf{No verificado}: no se renderizó en un navegador (solo se comprobó que los archivos se sirven) & Pendiente \\
+Enlace SPI con el ESP32-S3 & \textbf{No verificado}: la placa aún no está cableada a la Raspberry Pi & Pendiente \\
+Documentos \LaTeX{} & \textbf{No compilados} en el equipo de trabajo (no hay distribución \LaTeX{} instalada) & Pendiente \\
+Cálculos de la estimación SPI & Revisados a mano por la IA; deben ser revisados por el equipo & Pendiente de revisión humana \\
+\bottomrule
+\end{tabular}
+\caption{Verificación del trabajo producido con apoyo de IA.}
+\end{table}
+
+Las afirmaciones sobre el hardware (límites del ADC, FIFO de 64 bytes del esclavo) se tomaron del código fuente de Zephyr y de sus HAL instalados en el equipo, o se marcan como \emph{por verificar} en los documentos.
+
+\section{Contenido de los chats}
+
+El registro de las interacciones está en el Documento 6. La transcripción completa generada por la herramienta se exporta con el script \texttt{Documentos/IA/exportar\_chats.ps1} a la carpeta \texttt{Transcripciones\_crudas/}, excluida de Git porque contiene rutas locales y metadatos que deben revisarse antes de publicarse. Se omitieron del registro las credenciales que el usuario compartió en el chat.
+
+\section{Responsabilidad}
+
+Los integrantes revisaron y asumen la responsabilidad del contenido entregado. Las decisiones de diseño finales corresponden al equipo.
+
+\end{document}

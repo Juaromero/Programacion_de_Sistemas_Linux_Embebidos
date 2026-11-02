@@ -23,12 +23,10 @@ Proyecto_2/
 │       ├── tests/            test_protocol.c (sin hardware)
 │       ├── Makefile, install.sh
 ├── Documentos/
-│   ├── Especificacion_tecnica_y_arquitectura.tex   Documento 1
-│   ├── Matriz_verificacion_y_plan_de_pruebas.tex   Documento 2
-│   ├── Protocolo_SPI.md                            Formato de trama y comandos
-│   ├── Declaracion_Participacion.md
-│   ├── IA/                                         Declaración de uso de IA y registro de chats
-│   └── Resultados_Pruebas/                         Evidencias (logs, capturas)
+│   ├── Latex/                  6 documentos LaTeX + preámbulo y portada compartidos + Makefile
+│   ├── PDF/                    PDF generados (make en Latex/)
+│   ├── IA/                     exportar_chats.ps1 (transcripciones crudas, fuera de Git)
+│   └── Resultados_Pruebas/     Evidencias (logs, capturas)
 └── Imagenes/
 ```
 
@@ -85,7 +83,7 @@ curl http://localhost/data/window.json                     # última ventana
 journalctl -u oscd -f                                      # registro del servicio
 ```
 
-Parámetros de `oscd`: `--dev`, `--speed` (Hz), `--gap-us` (guarda entre transacciones), `--out`, `--port`, `--refresh` (0,25 a 1), `--preset`, `--bench N`, `--rt`, `-v`.
+Parámetros de `oscd`: `--dev`, `--speed` (Hz), `--gap-us` (guarda entre transacciones), `--out`, `--port`, `--refresh` (0,25 a 1), `--preset`, `--bench N`, `--bench-secs S`, `--demo`, `--rt`, `-v`.
 
 ## 3. Puesta en marcha recomendada
 
@@ -94,21 +92,35 @@ Parámetros de `oscd`: `--dev`, `--speed` (Hz), `--gap-us` (guarda entre transac
 3. Conectar el SPI; arrancar con `--speed 1000000` y subir hasta la velocidad estable; ajustar `--gap-us`.
 4. Editar `config/oscd.service` con los valores estables y arrancar el servicio.
 
+## Probar la Raspberry Pi sin el ESP32-S3 (modo demo)
+
+```bash
+sudo ./oscd --demo --out /run/osciloscopio/window.json --port 8081   # ventanas sintéticas
+```
+
+Genera ventanas con el mismo formato (senoides) y responde a `/api/preset` y `/api/refresh`; sirve para probar Nginx, el dashboard y el servicio sin el enlace SPI.
+
 ## Estado
 
 | Elemento | Estado |
 |---|---|
 | Firmware compila y se ejecuta en el ESP32-S3 (4 presets, ADC con DMA, monitor serie) | Verificado en hardware |
-| Duración de ventana por preset (incl. 41 667 Sa/s) | Medido (ver Documento 2) |
-| CRC-16 compatible ESP32-S3 ↔ host | Verificado (`0x29B1`) |
-| Servicio `oscd`, dashboard, Nginx, systemd | Escrito; **no probado aún en la Raspberry Pi** |
-| Enlace SPI extremo a extremo y pruebas de integración | **Pendiente** |
-| Los `.tex` | Actualizados; no compilados en este equipo (sin LaTeX instalado) |
+| Duración de ventana por preset (incl. 41 667 Sa/s) | Medido (Documento 2) |
+| CRC-16 compatible ESP32-S3 ↔ Raspberry Pi | Verificado (`0x29B1`) |
+| `oscd` compila y pasa `make test` en la Raspberry Pi 4 | Verificado |
+| `spidev0.0` (modo 0, 8 bits) y latencia del `ioctl` | Medido |
+| Nginx + API + JSON atómico + refresco + reinicio systemd (modo demo) | Verificado en la Raspberry Pi |
+| Dashboard renderizado en un navegador | **Pendiente** |
+| Enlace SPI ESP32-S3 ↔ Raspberry Pi y pruebas de integración | **Pendiente** (placas sin cablear) |
+| Los `.tex` | Reorganizados; revisión estática OK, **sin compilar** (sin LaTeX en el equipo) |
 
 ## Documentación
 
-* [Especificación técnica y arquitectura](Documentos/Especificacion_tecnica_y_arquitectura.tex)
-* [Matriz de verificación y plan de pruebas](Documentos/Matriz_verificacion_y_plan_de_pruebas.tex)
-* [Protocolo SPI](Documentos/Protocolo_SPI.md)
-* [Declaración de participación](Documentos/Declaracion_Participacion.md)
-* [Declaración de uso de IA](Documentos/IA/Declaracion_Uso_IA.md) y [registro de conversaciones](Documentos/IA/Registro_Conversaciones.md)
+Todos los documentos están en LaTeX en [`Documentos/Latex`](Documentos/Latex/) (ver su README para compilar):
+
+1. Especificación técnica y arquitectura
+2. Matriz de verificación y plan de pruebas
+3. Protocolo SPI
+4. Declaración de participación
+5. Declaración de uso de IA
+6. Registro de conversaciones

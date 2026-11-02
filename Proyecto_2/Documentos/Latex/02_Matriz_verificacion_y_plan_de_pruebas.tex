@@ -1,51 +1,10 @@
 \documentclass[12pt,a4paper]{article}
-
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[spanish]{babel}
-\usepackage[margin=2.2cm]{geometry}
-\usepackage{amsmath}
-\usepackage{booktabs}
-\usepackage{float}
-\usepackage[hidelinks]{hyperref}
-
-\renewcommand{\contentsname}{Índice}
-\renewcommand{\tablename}{Tabla}
+\input{preambulo}
+\input{portada}
 
 \begin{document}
 
-% ============================================================
-% PORTADA
-% ============================================================
-\begin{titlepage}
-\centering
-{\large Universidad Nacional de Colombia --- Sede Manizales\par}
-{\large Facultad de Ingeniería y Arquitectura\par}
-{\large Carrera de Ingeniería Electrónica\par}
-\vspace{1.2cm}
-{\large Materia: \textbf{Programación de sistemas Linux embebido}\par}
-\vspace{1.8cm}
-{\LARGE\bfseries Sistema Híbrido de Adquisición Analógica mediante SPI\\[0.3cm]
-y Dashboard Embebido en Linux\par}
-\vspace{0.5cm}
-{\Large Documento 2: Matriz de verificación y plan de pruebas\par}
-\vspace{1.5cm}
-
-\small
-\begin{tabular}{@{}p{0.5cm} p{4.2cm} p{2.8cm} p{6.0cm}@{}}
-\toprule
-& \textbf{Integrante} & \textbf{C.C.} & \textbf{Rol técnico} \\
-\midrule
-1. & \hrulefill & \hrulefill & Ingeniero de Documentación Técnica y Gestión de Configuración \\[0.7cm]
-2. & \hrulefill & \hrulefill & Arquitecto de Sistemas Embebidos \\[0.7cm]
-3. & \hrulefill & \hrulefill & Ingeniero de Software y Firmware Embebido \\[0.7cm]
-4. & \hrulefill & \hrulefill & Ingeniero de Verificación y Validación (V\&V) \\[0.7cm]
-\bottomrule
-\end{tabular}
-
-\vfill
-Manizales, noviembre de 2026
-\end{titlepage}
+\portada{Documento 2: Matriz de verificación y plan de pruebas}
 
 \tableofcontents
 \newpage
@@ -129,13 +88,13 @@ UT-MCU-03 & ESP32-S3 & Llenado de 64 pares por ventana & 100; 1\,000; 10\,000; 4
 UT-MCU-04 & ESP32-S3 & Anillo de 3 slots bajo lectura SPI & 41\,667 & Ninguna ventana alterada durante su entrega & Cero ventanas corruptas & Pendiente \\
 UT-MCU-05 & ESP32-S3 & Segmento SPI (cabecera, datos y CRC) & 1\,000 & CRC válido en 100\,\% de los segmentos & 64 bytes por segmento & Parcial \\
 UT-MCU-06 & ESP32-S3 & Ejecución de comando de preset & 100 a 41\,667 & Cambio de frecuencia en $\leq$ 1 ventana & Cambio en $\leq$ 1 $T_w$ & Parcial \\
-UT-SBC-01 & Raspberry Pi & Configuración de \texttt{spidev} & 1\,000 & Modo 0, velocidad y 8 bits confirmados & Parámetros aplicados & Pendiente \\
+UT-SBC-01 & Raspberry Pi & Configuración de \texttt{spidev} & 1\,000 & Modo 0, velocidad y 8 bits confirmados & Parámetros aplicados & Aprobada \\
 UT-SBC-02 & Raspberry Pi & Validación de CRC y descarte & 10\,000 & Tramas corruptas descartadas y reintentadas & 0 tramas corruptas aceptadas & Parcial \\
-UT-SBC-03 & Raspberry Pi & Escritura atómica del archivo de ventana & 1\,000 & Lectura nunca parcial desde el servidor & Archivo consistente & Pendiente \\
-UT-SBC-04 & Servidor HTTP & Entrega del JSON de la última ventana & 1\,000 & HTTP 200 y JSON válido & Respuesta en $\leq$ 100 ms & Pendiente \\
-UT-SBC-05 & Servicio systemd & Reinicio automático del servicio & --- & Servicio activo tras fallo simulado & Reinicio en $\leq$ 5 s & Pendiente \\
-IT-01 & Sistema & Refresco del dashboard a 0{,}25 Hz & 1\,000 & Actualización cada 4 s $\pm$ 0{,}2 s & $T_r = 4$ s & Pendiente \\
-IT-02 & Sistema & Refresco del dashboard a 1 Hz & 1\,000 & Actualización cada 1 s $\pm$ 0{,}1 s & $T_r = 1$ s & Pendiente \\
+UT-SBC-03 & Raspberry Pi & Escritura atómica del archivo de ventana & 1\,000 & Lectura nunca parcial desde el servidor & Archivo consistente & Aprobada \\
+UT-SBC-04 & Servidor HTTP & Entrega del JSON de la última ventana & 1\,000 & HTTP 200 y JSON válido & Respuesta en $\leq$ 100 ms & Aprobada \\
+UT-SBC-05 & Servicio systemd & Reinicio automático del servicio & --- & Servicio activo tras fallo simulado & Reinicio en $\leq$ 5 s & Aprobada \\
+IT-01 & Sistema & Refresco del dashboard a 0{,}25 Hz & 1\,000 & Actualización cada 4 s $\pm$ 0{,}2 s & $T_r = 4$ s & Parcial \\
+IT-02 & Sistema & Refresco del dashboard a 1 Hz & 1\,000 & Actualización cada 1 s $\pm$ 0{,}1 s & $T_r = 1$ s & Parcial \\
 IT-03 & Enlace SPI & Transferencia de ventana a 100 Sa/s & 100 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}02\,\%$ (20 MHz) & Pendiente \\
 IT-04 & Enlace SPI & Transferencia de ventana a 1\,000 Sa/s & 1\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}20\,\%$ (20 MHz) & Pendiente \\
 IT-05 & Enlace SPI & Transferencia de ventana a 10\,000 Sa/s & 10\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 2{,}0\,\%$ (20 MHz) & Pendiente \\
@@ -270,6 +229,49 @@ La prueba queda \textbf{parcial}: confirma que la ráfaga completa de 64 pares d
   \item \textbf{UT-MCU-06 (parcial):} el cambio de preset por teclado del monitor serie se refleja en la ventana siguiente en los cuatro presets. Falta repetir la prueba con el comando SPI.
   \item \textbf{UT-SBC-02 (parcial):} el protocolo de la Raspberry Pi pasa 11 comprobaciones en el host, entre ellas el descarte de una trama con un bit alterado y una con sincronía errónea (evidencia \texttt{UT-SBC-02\_test\_protocol\_host.log}). Falta la prueba sobre el bus real.
 \end{itemize}
+
+\subsection{Pruebas en la Raspberry Pi 4 sin el ESP32-S3 (2 de noviembre de 2026)}
+
+Ejecutadas en una Raspberry Pi 4 Model B Rev 1.2 (kernel 6.18). Las pruebas de servidor, API y servicio usan el modo \texttt{oscd --demo}, que genera ventanas sintéticas con el mismo formato JSON; no prueban el enlace SPI. Evidencia: \texttt{UT-SBC-01\_spidev\_ioctl.log} y \texttt{UT-SBC-03-05\_IT-01-02\_raspberry.log}.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{1.8cm} p{6.4cm} p{6.8cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Resultado medido} & \textbf{Conclusión} \\
+\midrule
+UT-SBC-01 & \texttt{spidev0.0} acepta modo 0, 8 bits y las velocidades pedidas (1, 8, 15{,}6, 20 y 31{,}25 MHz) & Aprobada. El reloj efectivo queda por medir con analizador lógico \\
+UT-SBC-03 & 189\,609 lecturas directas de \texttt{window.json} mientras el servicio lo reescribía: 0 parciales, 25 versiones distintas vistas & Aprobada: la escritura con \texttt{rename} es atómica \\
+UT-SBC-04 & 300 solicitudes HTTP (una cada 100 ms): 300 con código 200 y JSON válido; tiempo máximo 48{,}7 ms & Aprobada ($\leq$ 100 ms) \\
+UT-SBC-05 & \texttt{kill -9} al servicio: nuevo PID y respuesta HTTP 200 en 1{,}09 s & Aprobada ($\leq$ 5 s) \\
+IT-01 & Escritura del JSON a 0{,}25 Hz: 8 intervalos, media 4{,}000 s, rango 4{,}000 a 4{,}001 s & Parcial: falta medir las solicitudes del navegador \\
+IT-02 & Escritura del JSON a 1 Hz: 11 intervalos, media 1{,}001 s, rango 1{,}000 a 1{,}001 s & Parcial: falta medir las solicitudes del navegador \\
+\bottomrule
+\end{tabular}
+\caption{Pruebas ejecutadas en la Raspberry Pi 4.}
+\end{table}
+
+Tiempo del \texttt{ioctl} de una transacción de 64 bytes (sin ESP32-S3, MISO flotante), promedio de miles de transacciones:
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.4cm} p{3.4cm} p{3.4cm} p{3.4cm}@{}}
+\toprule
+\textbf{Velocidad solicitada} & \textbf{Tiempo ideal de bits} & \textbf{\texttt{ioctl} medio} & \textbf{\texttt{ioctl} máximo} \\
+\midrule
+1 MHz      & 512{,}0 $\mu$s & 590{,}5 $\mu$s & 625{,}3 $\mu$s \\
+8 MHz      & 64{,}0 $\mu$s  & 96{,}5 $\mu$s  & 146{,}9 $\mu$s \\
+15{,}625 MHz & 32{,}8 $\mu$s & 58{,}7 $\mu$s & 101{,}7 $\mu$s \\
+20 MHz     & 25{,}6 $\mu$s  & 52{,}6 $\mu$s  & 111{,}8 $\mu$s \\
+31{,}25 MHz & 16{,}4 $\mu$s & 29{,}5 $\mu$s  & 104{,}2 $\mu$s \\
+\bottomrule
+\end{tabular}
+\caption{Latencia del \texttt{ioctl} SPI en la Raspberry Pi 4.}
+\end{table}
+
+El \texttt{ioctl} añade entre 13 y 78 $\mu$s sobre el tiempo ideal de bits. Con cinco transacciones por ventana y 150 $\mu$s de guarda, un ciclo de lectura cuesta aproximadamente 1{,}0 ms a 20 MHz y 1{,}2 ms a 8 MHz, frente a una ventana nueva cada $\approx$ 1{,}6 ms en el preset de 41\,667 Sa/s: el margen existe pero es estrecho y la guarda mínima estable debe determinarse con el ESP32-S3 conectado.
 
 \subsection{Hallazgo abierto sobre las entradas}
 

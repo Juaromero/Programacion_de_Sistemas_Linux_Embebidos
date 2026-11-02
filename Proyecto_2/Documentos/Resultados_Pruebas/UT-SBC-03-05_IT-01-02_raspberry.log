@@ -1,0 +1,22 @@
+Pruebas: UT-SBC-03, UT-SBC-04, UT-SBC-05, IT-01 e IT-02 (parciales) - Raspberry Pi 4 con Nginx
+Fecha: 2026-11-02
+Condiciones: oscd en MODO DEMO (ventanas sinteticas); no hay ESP32-S3 ni enlace SPI en estas pruebas.
+
+### UT-SBC-04: 300 GET a /data/window.json (cada 100 ms)
+ok=300 fallos=0 t_max=48.7 ms
+### UT-SBC-03: lecturas directas del archivo durante la escritura (refresco 1 Hz, 25 s)
+lecturas ok=189609 parciales/invalidas=0 versiones distintas vistas=25
+### IT-01/02: cadencia de escritura del JSON (mtime), 1 Hz y 0.25 Hz
+hz=1.0 esperado=1.00s  intervalos n=11 media=1.001s min=1.000 max=1.001
+hz=0.25 esperado=4.00s  intervalos n=8 media=4.000s min=4.000 max=4.001
+### UT-SBC-05: reinicio automatico tras kill -9 (unidad systemd transitoria con Restart=always, RestartSec=1)
+PID antes: 2410
+PID despues: 2446  reinicio en 1.087974347 s
+HTTP tras reinicio: 200
+
+Verificaciones previas de la API (curl via Nginx):
+  GET /data/window.json -> HTTP 200 en 0.0014 s, JSON valido, 64+64 muestras
+  POST /api/preset?id=2  -> {"ok":true,"preset_req":2}; la ventana siguiente salio con preset 2 y fs 10000
+  POST /api/refresh?hz=0.25 -> {"ok":true,"refresh_hz":0.25}
+  POST /api/preset?id=9  -> {"ok":false,"error":"id 0..3"}
+  GET / y /uPlot.iife.min.js -> HTTP 200

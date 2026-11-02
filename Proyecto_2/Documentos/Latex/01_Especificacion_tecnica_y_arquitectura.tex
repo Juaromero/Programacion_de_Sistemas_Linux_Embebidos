@@ -1,70 +1,10 @@
 \documentclass[12pt,a4paper]{article}
-
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[spanish]{babel}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{amsmath}
-\usepackage{booktabs}
-\usepackage{float}
-\usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
-\usepackage[hidelinks]{hyperref}
-
-\renewcommand{\contentsname}{Índice}
-\renewcommand{\figurename}{Figura}
-\renewcommand{\tablename}{Tabla}
-
-\tikzset{
-  bloque/.style={rectangle, rounded corners, draw=black, thick, fill=blue!8,
-                 text width=7.5cm, align=center, font=\small, inner sep=6pt},
-  bloqueMCU/.style={bloque, fill=green!12},
-  bloqueSPI/.style={bloque, fill=orange!25},
-  bloqueSBC/.style={bloque, fill=violet!12},
-  flujo/.style={-{Stealth[length=2.5mm]}, thick},
-  bidir/.style={{Stealth[length=2.5mm]}-{Stealth[length=2.5mm]}, thick},
-  inicio/.style={rectangle, rounded corners=6pt, draw=black, thick, fill=green!15,
-                 minimum width=3.5cm, minimum height=0.8cm, align=center, font=\small},
-  proc/.style={rectangle, draw=black, thick, fill=blue!8, text width=5.2cm,
-               align=center, font=\small, minimum height=0.9cm, inner sep=4pt},
-  dec/.style={diamond, aspect=2.4, draw=black, thick, fill=yellow!20,
-              text width=3.0cm, align=center, font=\footnotesize, inner sep=1pt},
-}
+\input{preambulo}
+\input{portada}
 
 \begin{document}
 
-% ============================================================
-% PORTADA
-% ============================================================
-\begin{titlepage}
-\centering
-{\large Universidad Nacional de Colombia --- Sede Manizales\par}
-{\large Facultad de Ingeniería y Arquitectura\par}
-{\large Carrera de Ingeniería Electrónica\par}
-\vspace{1.2cm}
-{\large Materia: \textbf{Programación de sistemas Linux embebido}\par}
-\vspace{1.8cm}
-{\LARGE\bfseries Sistema Híbrido de Adquisición Analógica mediante SPI\\[0.3cm]
-y Dashboard Embebido en Linux\par}
-\vspace{0.5cm}
-{\Large Documento 1: Especificación técnica y arquitectura del sistema\par}
-\vspace{1.5cm}
-
-\small
-\begin{tabular}{@{}p{0.5cm} p{4.2cm} p{2.8cm} p{6.0cm}@{}}
-\toprule
-& \textbf{Integrante} & \textbf{C.C.} & \textbf{Rol técnico} \\
-\midrule
-1. & \hrulefill & \hrulefill & Ingeniero de Documentación Técnica y Gestión de Configuración \\[0.7cm]
-2. & \hrulefill & \hrulefill & Arquitecto de Sistemas Embebidos \\[0.7cm]
-3. & \hrulefill & \hrulefill & Ingeniero de Software y Firmware Embebido \\[0.7cm]
-4. & \hrulefill & \hrulefill & Ingeniero de Verificación y Validación (V\&V) \\[0.7cm]
-\bottomrule
-\end{tabular}
-
-\vfill
-Manizales, noviembre de 2026
-\end{titlepage}
+\portada{Documento 1: Especificación técnica y arquitectura del sistema}
 
 \tableofcontents
 \newpage
@@ -339,7 +279,7 @@ La eficiencia del enlace, definida como la fracción de bytes del bus que son da
 \caption{Tiempo de transferencia y ciclo de trabajo del bus SPI por preset (solo bits de reloj).}
 \end{table}
 
-El requerimiento RNF-02 ($D < 15\,\%$ a 41\,667 Sa/s) se cumple con reloj mayor o igual a $\approx$ 11{,}1 MHz; con los divisores del SPI0 de la Raspberry Pi 4 esto exige 15{,}625 MHz. A 7{,}8 MHz el ciclo de trabajo sería de $\approx$ 21\,\%.
+El requerimiento RNF-02 ($D < 15\,\%$ a 41\,667 Sa/s) se cumple con reloj mayor o igual a $\approx$ 11{,}1 MHz, es decir, desde unos 15 MHz solicitados a la Raspberry Pi. A 8 MHz el ciclo de trabajo sería de $\approx$ 21\,\%. El reloj efectivo del SPI0 de la Raspberry Pi 4 es un divisor entero del reloj del núcleo del SoC y debe medirse con analizador lógico.
 
 \subsection{Tasa máxima teórica}
 

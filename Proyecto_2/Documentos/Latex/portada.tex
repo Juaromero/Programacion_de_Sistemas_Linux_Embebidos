@@ -1,0 +1,33 @@
+% ============================================================
+% Portada común: \portada{Título del documento}
+% ============================================================
+\newcommand{\portada}[1]{%
+\begin{titlepage}
+\centering
+{\large \Universidad\par}
+{\large \Facultad\par}
+{\large \Carrera\par}
+\vspace{1.2cm}
+{\large Materia: \textbf{\Materia}\par}
+\vspace{1.8cm}
+{\LARGE\bfseries \TituloProyecto\par}
+\vspace{0.5cm}
+{\Large #1\par}
+\vspace{1.5cm}
+
+\small
+\begin{tabular}{@{}p{0.5cm} p{4.2cm} p{2.8cm} p{6.0cm}@{}}
+\toprule
+& \textbf{Integrante} & \textbf{C.C.} & \textbf{Rol técnico} \\
+\midrule
+1. & \hrulefill & \hrulefill & Ingeniero de Documentación Técnica y Gestión de Configuración \\[0.7cm]
+2. & \hrulefill & \hrulefill & Arquitecto de Sistemas Embebidos \\[0.7cm]
+3. & \hrulefill & \hrulefill & Ingeniero de Software y Firmware Embebido \\[0.7cm]
+4. & \hrulefill & \hrulefill & Ingeniero de Verificación y Validación (V\&V) \\[0.7cm]
+\bottomrule
+\end{tabular}
+
+\vfill
+\FechaDoc
+\end{titlepage}
+}

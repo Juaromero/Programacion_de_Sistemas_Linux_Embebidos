@@ -141,6 +141,49 @@ static int link_read_window(struct osc_window *out)
 	return -1;
 }
 
+/* ---- Modo demostracion: ventanas sinteticas, sin ESP32 ni SPI ---- */
+
+static int demo;
+
+static int demo_window(struct osc_window *w)
+{
+	static const uint32_t fs[OSC_NPRESETS] = { 100, 1000, 10000, 41667 };
+	static uint16_t seq;
+	static uint8_t preset;
+	static uint64_t next_ns;
+
+	if (cmd_pending == OSC_CMD_SET_PRESET && cmd_arg < OSC_NPRESETS) {
+		preset = cmd_arg;       /* "ejecuta" el comando como lo haria el ESP32 */
+		cmd_pending = 0;
+	}
+	/* Una ventana nueva por periodo de ventana (maximo 1 cada 20 ms) */
+	uint64_t tw_ns = (uint64_t)(OSC_WIN_SAMPLES * 1e9 / fs[preset]);
+
+	if (tw_ns < 20000000ull) tw_ns = 20000000ull;
+	uint64_t now = now_ns();
+
+	if (now < next_ns) {
+		return 0;
+	}
+	next_ns = now + tw_ns;
+	w->wseq = seq++;
+	w->preset = preset;
+	w->fs_hz = fs[preset];
+	w->n = OSC_WIN_SAMPLES;
+	w->n_ch = OSC_NCH;
+	w->bits = 12;
+	for (unsigned i = 0; i < OSC_WIN_SAMPLES; i++) {
+		double ph = 2.0 * M_PI * i / 16.0;               /* 4 periodos por ventana */
+		w->ch[0][i] = (uint16_t)(2048 + 1700 * sin(ph + seq * 0.05));
+		w->ch[1][i] = (uint16_t)(2048 + 1700 * sin(ph / 2.0));  /* 2 periodos */
+	}
+	preset_seen = preset;
+	last_wseq = w->wseq;
+	have_last = 1;
+	st.windows++;
+	return 1;
+}
+
 /* ---- JSON ---- */
 
 static int build_json(char *buf, size_t sz)
@@ -272,13 +315,15 @@ static void http_serve(int lfd)
 
 /* ---- Banco de pruebas ---- */
 
+static unsigned bench_secs = 30;   /* tope de duracion (sin ESP32 no hay ventanas) */
+
 static void bench(unsigned nwin)
 {
 	uint64_t t0 = now_ns();
 	struct osc_window w;
 	unsigned got = 0;
 
-	while (running && got < nwin) {
+	while (running && got < nwin && (now_ns() - t0) < bench_secs * 1000000000ull) {
 		int r = link_read_window(&w);
 
 		if (r == 1) {
@@ -320,10 +365,11 @@ int main(int argc, char **argv)
 	static const struct option lo[] = {
 		{ "dev", 1, 0, 'd' }, { "speed", 1, 0, 's' }, { "gap-us", 1, 0, 'g' },
 		{ "out", 1, 0, 'o' }, { "port", 1, 0, 'p' }, { "refresh", 1, 0, 'r' },
-		{ "bench", 1, 0, 'b' }, { "preset", 1, 0, 'P' }, { "rt", 0, 0, 'R' },
-		{ "verbose", 0, 0, 'v' }, { 0, 0, 0, 0 } };
+		{ "bench", 1, 0, 'b' }, { "bench-secs", 1, 0, 'T' }, { "preset", 1, 0, 'P' },
+		{ "rt", 0, 0, 'R' }, { "verbose", 0, 0, 'v' }, { "demo", 0, 0, 'D' },
+		{ 0, 0, 0, 0 } };
 
-	while ((opt = getopt_long(argc, argv, "d:s:g:o:p:r:b:P:Rv", lo, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "d:s:g:o:p:r:b:T:P:RvD", lo, NULL)) != -1) {
 		switch (opt) {
 		case 'd': dev = optarg; break;
 		case 's': speed = (uint32_t)atoi(optarg); break;
@@ -332,9 +378,11 @@ int main(int argc, char **argv)
 		case 'p': port = atoi(optarg); break;
 		case 'r': refresh_hz = atof(optarg); break;
 		case 'b': bench_n = atoi(optarg); break;
+		case 'T': bench_secs = (unsigned)atoi(optarg); break;
 		case 'P': set_preset = atoi(optarg); break;
 		case 'R': rt = 1; break;
 		case 'v': verbose = 1; break;
+		case 'D': demo = 1; break;
 		default:
 			fprintf(stderr, "uso: %s [--dev D] [--speed Hz] [--gap-us N] [--out F] [--port P]\n"
 				"          [--refresh 0.25..1] [--preset 0..3] [--bench N] [--rt] [-v]\n", argv[0]);
@@ -353,7 +401,13 @@ int main(int argc, char **argv)
 
 		if (sched_setscheduler(0, SCHED_FIFO, &sp) < 0) perror("SCHED_FIFO");
 	}
-	if (spim_open(&spim, dev, speed, gap) < 0) {
+	if (demo) {
+		spim.fd = -1;
+		spim.speed_hz = speed;
+		spim.gap_us = gap;
+		cmd_seq_known = 1;
+		fprintf(stderr, "oscd: MODO DEMO (ventanas sinteticas, sin SPI)\n");
+	} else if (spim_open(&spim, dev, speed, gap) < 0) {
 		return 1;
 	}
 	if (set_preset >= 0) {
@@ -372,7 +426,7 @@ int main(int argc, char **argv)
 		gap, out, port);
 	while (running) {
 		struct osc_window w;
-		int r = link_read_window(&w);
+		int r = demo ? demo_window(&w) : link_read_window(&w);
 
 		if (r == 1) {
 			latest = w;

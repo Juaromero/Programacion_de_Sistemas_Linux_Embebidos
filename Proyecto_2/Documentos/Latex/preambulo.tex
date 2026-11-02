@@ -1,0 +1,48 @@
+% ============================================================
+% Preámbulo común a todos los documentos del Proyecto 2
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\usepackage[hidelinks]{hyperref}
+
+\renewcommand{\contentsname}{Índice}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
+
+\setlist{itemsep=2pt, topsep=4pt}
+
+\tikzset{
+  bloque/.style={rectangle, rounded corners, draw=black, thick, fill=blue!8,
+                 text width=7.5cm, align=center, font=\small, inner sep=6pt},
+  bloqueMCU/.style={bloque, fill=green!12},
+  bloqueSPI/.style={bloque, fill=orange!25},
+  bloqueSBC/.style={bloque, fill=violet!12},
+  flujo/.style={-{Stealth[length=2.5mm]}, thick},
+  bidir/.style={{Stealth[length=2.5mm]}-{Stealth[length=2.5mm]}, thick},
+  inicio/.style={rectangle, rounded corners=6pt, draw=black, thick, fill=green!15,
+                 minimum width=3.5cm, minimum height=0.8cm, align=center, font=\small},
+  proc/.style={rectangle, draw=black, thick, fill=blue!8, text width=5.2cm,
+               align=center, font=\small, minimum height=0.9cm, inner sep=4pt},
+  dec/.style={diamond, aspect=2.4, draw=black, thick, fill=yellow!20,
+              text width=3.0cm, align=center, font=\footnotesize, inner sep=1pt},
+}
+
+% Datos del proyecto (un solo lugar para mantenerlos)
+\newcommand{\Universidad}{Universidad Nacional de Colombia --- Sede Manizales}
+\newcommand{\Facultad}{Facultad de Ingeniería y Arquitectura}
+\newcommand{\Carrera}{Carrera de Ingeniería Electrónica}
+\newcommand{\Materia}{Programación de sistemas Linux embebido}
+\newcommand{\TituloProyecto}{Sistema Híbrido de Adquisición Analógica mediante SPI\\[0.3cm]y Dashboard Embebido en Linux}
+\newcommand{\FechaDoc}{Manizales, noviembre de 2026}
+
+% Comando de color-neutral para valores a completar por el equipo
+\newcommand{\completar}[1]{\textit{[#1]}}
