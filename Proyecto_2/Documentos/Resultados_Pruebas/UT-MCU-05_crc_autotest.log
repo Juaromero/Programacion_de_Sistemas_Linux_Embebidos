@@ -1,0 +1,12 @@
+Prueba: UT-MCU-05 (parcial) - CRC-16/CCITT-FALSE calculado en el ESP32-S3
+Fecha: 2026-11-02   Placa: ESP32-S3-N16R8 (puerto UART/CH343, 115200 8N1)
+Firmware: Proyecto_2/Codigo/Firmware_ESP32S3 (Zephyr 4.5.99)
+Captura textual del monitor serie tras cargar el firmware:
+
+=== Osciloscopio ESP32-S3 (Zephyr) ===
+CRC-16 de "123456789" = 0x29b1 (esperado 0x29b1)
+STAT preset=0 fs=100 Sa/s ventanas=1 err_adc=0 t_adc_read=640066 us spi_tx=0 spi_parcial=0 cmd_ok=0 cmd_bad=0 resync=0 crc_test=0x29b1
+STAT preset=0 fs=100 Sa/s ventanas=3 err_adc=0 t_adc_read=640093 us spi_tx=0 spi_parcial=0 cmd_ok=0 cmd_bad=0 resync=0 crc_test=0x29b1
+
+Resultado: el vector de prueba da 0x29B1 en el ESP32-S3, igual que en el codigo de la
+Raspberry Pi compilado en el host (tests/test_protocol.c, 11 comprobaciones OK).

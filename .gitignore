@@ -1,0 +1,30 @@
+# Compilación
+build/
+*.o
+*.elf
+*.bin
+*.map
+oscd
+Proyecto_2/Codigo/Software_RPi/tests/test_protocol
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+# ...pero los logs de evidencia de pruebas sí se versionan
+!Proyecto_2/Documentos/Resultados_Pruebas/*.log
+
+# Transcripciones crudas de IA (revisar y depurar antes de publicar)
+Proyecto_2/Documentos/IA/Transcripciones_crudas/
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+__pycache__/

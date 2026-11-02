@@ -1,0 +1,66 @@
+/*
+ * Osciloscopio: ADC1 (GPIO1 = CH1, GPIO2 = CH2) con DMA, SPI2 como esclavo
+ * (GPIO10 CS, GPIO11 MOSI, GPIO12 SCLK, GPIO13 MISO: pines IOMUX nativos de
+ * FSPI). La consola es UART0 (puerto "UART" de la DevKitC, puente CH343,
+ * 115200 8N1), que es el predeterminado de la placa. Para usar el puerto USB
+ * nativo agregar boards/usb_console.overlay (ver README).
+ */
+
+#include <dt-bindings/pinctrl/esp32s3-pinctrl.h>
+
+/ {
+	zephyr,user {
+		/* CH1 = ADC1_CH0 (GPIO1), CH2 = ADC1_CH1 (GPIO2) */
+		io-channels = <&adc0 0>, <&adc0 1>;
+	};
+};
+
+&adc0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	dmas = <&dma 2>;
+	status = "okay";
+
+	/* Atenuacion 12 dB (ADC_GAIN_1_4): rango util aprox. 0.1 V a 3.1 V */
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+};
+
+&dma {
+	status = "okay";
+};
+
+&pinctrl {
+	spis2_default: spis2_default {
+		group1 {
+			pinmux = <SPIS2_SCLK_GPIO12>,
+				 <SPIS2_MOSI_GPIO11>,
+				 <SPIS2_CSEL_GPIO10>;
+		};
+
+		group2 {
+			pinmux = <SPIS2_MISO_GPIO13>;
+			output-enable;
+		};
+	};
+};
+
+&spi2 {
+	pinctrl-0 = <&spis2_default>;
+	pinctrl-names = "default";
+	status = "okay";
+};

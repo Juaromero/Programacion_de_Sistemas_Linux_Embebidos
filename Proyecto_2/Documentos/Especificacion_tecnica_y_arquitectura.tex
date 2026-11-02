@@ -1,0 +1,450 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\usepackage[hidelinks]{hyperref}
+
+\renewcommand{\contentsname}{Índice}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
+
+\tikzset{
+  bloque/.style={rectangle, rounded corners, draw=black, thick, fill=blue!8,
+                 text width=7.5cm, align=center, font=\small, inner sep=6pt},
+  bloqueMCU/.style={bloque, fill=green!12},
+  bloqueSPI/.style={bloque, fill=orange!25},
+  bloqueSBC/.style={bloque, fill=violet!12},
+  flujo/.style={-{Stealth[length=2.5mm]}, thick},
+  bidir/.style={{Stealth[length=2.5mm]}-{Stealth[length=2.5mm]}, thick},
+  inicio/.style={rectangle, rounded corners=6pt, draw=black, thick, fill=green!15,
+                 minimum width=3.5cm, minimum height=0.8cm, align=center, font=\small},
+  proc/.style={rectangle, draw=black, thick, fill=blue!8, text width=5.2cm,
+               align=center, font=\small, minimum height=0.9cm, inner sep=4pt},
+  dec/.style={diamond, aspect=2.4, draw=black, thick, fill=yellow!20,
+              text width=3.0cm, align=center, font=\footnotesize, inner sep=1pt},
+}
+
+\begin{document}
+
+% ============================================================
+% PORTADA
+% ============================================================
+\begin{titlepage}
+\centering
+{\large Universidad Nacional de Colombia --- Sede Manizales\par}
+{\large Facultad de Ingeniería y Arquitectura\par}
+{\large Carrera de Ingeniería Electrónica\par}
+\vspace{1.2cm}
+{\large Materia: \textbf{Programación de sistemas Linux embebido}\par}
+\vspace{1.8cm}
+{\LARGE\bfseries Sistema Híbrido de Adquisición Analógica mediante SPI\\[0.3cm]
+y Dashboard Embebido en Linux\par}
+\vspace{0.5cm}
+{\Large Documento 1: Especificación técnica y arquitectura del sistema\par}
+\vspace{1.5cm}
+
+\small
+\begin{tabular}{@{}p{0.5cm} p{4.2cm} p{2.8cm} p{6.0cm}@{}}
+\toprule
+& \textbf{Integrante} & \textbf{C.C.} & \textbf{Rol técnico} \\
+\midrule
+1. & \hrulefill & \hrulefill & Ingeniero de Documentación Técnica y Gestión de Configuración \\[0.7cm]
+2. & \hrulefill & \hrulefill & Arquitecto de Sistemas Embebidos \\[0.7cm]
+3. & \hrulefill & \hrulefill & Ingeniero de Software y Firmware Embebido \\[0.7cm]
+4. & \hrulefill & \hrulefill & Ingeniero de Verificación y Validación (V\&V) \\[0.7cm]
+\bottomrule
+\end{tabular}
+
+\vfill
+Manizales, noviembre de 2026
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+% 1. DESCRIPCIÓN DEL PROYECTO
+% ============================================================
+\section{Descripción del proyecto}
+
+El sistema es un osciloscopio y capturador de datos híbrido de dos canales analógicos. La adquisición se realiza en un microcontrolador \textbf{ESP32-S3-N16R8} (16 MB de flash, 8 MB de PSRAM), programado con \textbf{Zephyr RTOS 4.5}, que digitaliza ambas señales con el ADC1 de 12 bits, las agrupa en ventanas de 64 muestras por canal y las ofrece por un enlace SPI en el que el ESP32-S3 actúa como esclavo. Una \textbf{Raspberry Pi 4 Model B} (Raspberry Pi OS) es el maestro del bus: un servicio escrito en C lee las ventanas, valida su integridad, conserva la última ventana válida y la publica en un servidor HTTP \textbf{Nginx}, que sirve un dashboard web con gráficas \textbf{uPlot}. Los mismos datos se muestran en el monitor serie del ESP32-S3.
+
+La captura es \emph{por refresco de ventanas}: el ESP32-S3 adquiere ventanas de forma continua e independiente y la Raspberry Pi toma la más reciente; no existe captura bajo demanda. La frecuencia de muestreo se selecciona entre presets preconfigurados en el firmware, intercambiables por SPI: 100, 1\,000 y 10\,000 Sa/s, más un preset de bonificación de 41\,667 Sa/s por canal. El dashboard se actualiza con una tasa entre 0{,}25 Hz (4 s) y 1 Hz (1 s).
+
+\subsection{Alcance}
+
+\begin{itemize}
+  \item Adquisición de dos canales analógicos con el ADC1 del ESP32-S3 (GPIO1 y GPIO2).
+  \item Ventanas de 64 muestras por canal con temporización constante dentro de cada ventana.
+  \item Transferencia por SPI con la Raspberry Pi como maestro (modo 0) y tramas con CRC-16.
+  \item Cambio de preset de frecuencia de muestreo mediante comandos SPI.
+  \item Servicio \texttt{systemd} en la Raspberry Pi que gestiona el bus y almacena la última ventana válida.
+  \item Dashboard web con refresco configurable entre 0{,}25 Hz y 1 Hz.
+  \item Visualización de las ventanas en el monitor serie del ESP32-S3.
+\end{itemize}
+
+\subsection{Diagrama de bloques del sistema}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.85cm]
+  \node[bloque] (sig) {Señales analógicas de entrada: CH1 (GPIO1) y CH2 (GPIO2), 0 a 3{,}1 V};
+  \node[bloqueMCU, below=of sig] (mcu) {ESP32-S3-N16R8 (Zephyr)\\ADC1 de 12 bits con DMA, anillo de 3 slots de ventana, esclavo SPI y monitor serie};
+  \node[bloqueSPI, below=of mcu] (spi) {Bus SPI modo 0\\Raspberry Pi maestro, ESP32-S3 esclavo};
+  \node[bloqueSBC, below=of spi] (rpi) {Raspberry Pi 4 Model B (Linux)\\Servicio \texttt{oscd} en C: lectura SPI, validación CRC-16, última ventana};
+  \node[bloqueSBC, below=of rpi] (web) {Servidor HTTP Nginx\\Sirve el dashboard, el JSON de la ventana y la API de control};
+  \node[bloque, below=of web] (cli) {Cliente HTTP (navegador)\\Dashboard uPlot con refresco entre 0{,}25 Hz y 1 Hz};
+
+  \draw[flujo] (sig) -- node[right, font=\footnotesize, xshift=2pt] {Conversión A/D} (mcu);
+  \draw[bidir] (mcu) -- (spi);
+  \draw[bidir] (spi) -- node[right, font=\footnotesize, xshift=2pt] {MOSI, MISO, SCLK, CS} (rpi);
+  \draw[flujo] (rpi) -- node[right, font=\footnotesize, xshift=2pt] {\texttt{window.json} en tmpfs} (web);
+  \draw[flujo] (web) -- node[right, font=\footnotesize, xshift=2pt] {HTTP} (cli);
+\end{tikzpicture}
+\caption{Diagrama de bloques hardware y software del sistema.}
+\label{fig:bloques}
+\end{figure}
+
+\subsection{Conexiones}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.2cm} p{3.6cm} p{5.6cm}@{}}
+\toprule
+\textbf{Señal} & \textbf{ESP32-S3} & \textbf{Raspberry Pi 4 (pin físico)} \\
+\midrule
+SCLK & GPIO12 & GPIO11 / SCLK (pin 23) \\
+MOSI & GPIO11 & GPIO10 / MOSI (pin 19) \\
+MISO & GPIO13 & GPIO9 / MISO (pin 21) \\
+CS   & GPIO10 & GPIO8 / CE0 (pin 24) \\
+GND  & GND    & GND (pin 25) \\
+\midrule
+CH1 (entrada analógica) & GPIO1 (ADC1\_CH0) & --- \\
+CH2 (entrada analógica) & GPIO2 (ADC1\_CH1) & --- \\
+\bottomrule
+\end{tabular}
+\caption{Cableado del sistema. GPIO10 a GPIO13 son los pines nativos (IOMUX) del periférico SPI2 del ESP32-S3.}
+\end{table}
+
+Las entradas analógicas se configuran con atenuación de 12 dB (rango útil aproximado de 0{,}1 V a 3{,}1 V). Las señales fuera de 0 a 3{,}3 V requieren acondicionamiento externo para no dañar el ADC.
+
+% ============================================================
+% 2. DECISIONES DE DISEÑO
+% ============================================================
+\section{Decisiones de diseño}
+
+\subsection{Adquisición con el ADC del ESP32-S3}
+
+El ESP32-S3 tiene un único convertidor SAR por unidad (ADC1) multiplexado entre canales, de modo que \emph{no} es posible muestrear dos canales en el mismo instante. La mejor opción disponible es el \textbf{controlador digital del ADC con DMA}: ambos canales se incluyen en el mismo patrón de conversión y el hardware los convierte uno tras otro con un intervalo constante, sin intervención del procesador. El canal CH2 se muestrea un intervalo de conversión después de CH1; ese desfase es constante, conocido y se documenta en la Tabla~\ref{tab:presets}.
+
+El controlador digital admite entre 611 y 83\,333 conversiones por segundo (sumadas ambas canales). Por eso:
+
+\begin{itemize}
+  \item 1\,000, 10\,000 y 41\,667 Sa/s por canal se obtienen con una ráfaga DMA de 64 pares y un intervalo entre conversiones de 500, 50 y 12 $\mu$s.
+  \item 100 Sa/s queda por debajo del mínimo de 611 Hz del controlador digital y se genera con un temporizador de tick absoluto (sin deriva) de 10 ms que dispara una lectura de los dos canales.
+  \item El máximo teórico es 83\,333/2 $\approx$ 41\,667 Sa/s por canal, que es el preset de bonificación (cumple $\geq$ 40\,000 Sa/s).
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{1.0cm} p{2.4cm} p{3.9cm} p{2.8cm} p{2.2cm}@{}}
+\toprule
+\textbf{ID} & \textbf{$f_s$ (Sa/s)} & \textbf{Modo} & \textbf{Intervalo} & \textbf{Desfase CH2} \\
+\midrule
+0 & 100    & Temporizador absoluto & 10 ms por par   & $\approx$ 12 $\mu$s \\
+1 & 1\,000 & Ráfaga DMA            & 500 $\mu$s      & 500 $\mu$s \\
+2 & 10\,000 & Ráfaga DMA           & 50 $\mu$s       & 50 $\mu$s \\
+3 & 41\,667 & Ráfaga DMA           & 12 $\mu$s       & 12 $\mu$s \\
+\bottomrule
+\end{tabular}
+\caption{Presets de muestreo del firmware.}
+\label{tab:presets}
+\end{table}
+
+Entre ventanas consecutivas hay un tiempo de arranque de la ráfaga ($\approx$ 75 a 90 $\mu$s medidos), por lo que la secuencia de ventanas no es continua en el tiempo; dentro de cada ventana la frecuencia de muestreo es constante. Esto equivale al comportamiento de un osciloscopio que re-arma el disparo en cada barrido.
+
+\subsection{Lenguaje del servicio en la Raspberry Pi}
+
+El servicio se implementa en \textbf{C}. A 41\,667 Sa/s el ESP32-S3 produce una ventana cada $\approx$ 1{,}6 ms; el servicio debe realizar cinco transacciones SPI de 64 bytes, validar cinco CRC y ensamblar la ventana en ese tiempo. C con \texttt{ioctl(SPI\_IOC\_MESSAGE)} y temporización con \texttt{clock\_nanosleep} ofrece latencia acotada y bajo uso de CPU sin depender de un intérprete, lo que da margen para el preset de bonificación. Python con \texttt{spidev} no se descartó por medición sino por prudencia de diseño: el requisito de bonificación deja poco margen temporal. La capacidad real del servicio se comprueba con su modo de banco de pruebas (\texttt{oscd --bench}).
+
+\subsection{Librería de gráficas}
+
+El dashboard usa \textbf{uPlot}: es una librería MIT de $\approx$ 50 KB, dibuja en \texttt{canvas} con el menor consumo de CPU entre las alternativas habituales y se sirve localmente desde la Raspberry Pi, cumpliendo RNF-07 (sin dependencias de servicios externos ni CDN).
+
+% ============================================================
+% 3. REQUERIMIENTOS
+% ============================================================
+\section{Requerimientos y restricciones}
+
+\subsection{Requerimientos funcionales}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{1.6cm} p{10.5cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Requerimiento} \\
+\midrule
+RF-01 & El ESP32-S3 digitaliza dos canales analógicos (GPIO1 y GPIO2) con el ADC1 de 12 bits. \\
+RF-02 & El ESP32-S3 organiza las muestras en ventanas de 64 muestras por canal. \\
+RF-03 & El ESP32-S3 muestrea a frecuencia constante, según el preset activo, dentro de cada ventana. \\
+RF-04 & Los presets 100, 1\,000 y 10\,000 Sa/s están preconfigurados en el firmware. \\
+RF-05 & El preset de bonificación de 41\,667 Sa/s ($\geq$ 40\,000 Sa/s) está preconfigurado en el firmware. \\
+RF-06 & La Raspberry Pi cambia el preset activo mediante un comando SPI. \\
+RF-07 & La Raspberry Pi recupera ventanas completas por SPI y valida su integridad. \\
+RF-08 & El servicio en Linux almacena la última ventana válida para el servidor web. \\
+RF-09 & El servidor HTTP publica el dashboard y los datos de la última ventana. \\
+RF-10 & El dashboard se actualiza con una tasa de refresco configurable entre 0{,}25 Hz y 1 Hz. \\
+RF-11 & Las ventanas adquiridas se muestran en el monitor serie del ESP32-S3. \\
+\bottomrule
+\end{tabular}
+\caption{Requerimientos funcionales.}
+\end{table}
+
+\subsection{Requerimientos no funcionales}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{1.6cm} p{10.5cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Requerimiento} \\
+\midrule
+RNF-01 & El reloj SPI es de 15{,}6 a 20 MHz (valor de diseño); el valor real queda determinado por los divisores del SPI0 de la Raspberry Pi y se mide. \\
+RNF-02 & Los bits de una ventana ocupan el bus menos del 15\,\% del período de ventana en el preset de 41\,667 Sa/s. \\
+RNF-03 & El firmware usa un anillo de tres slots de ventana para que la adquisición no se detenga durante la transferencia. \\
+RNF-04 & El servicio en Linux se ejecuta como servicio \texttt{systemd} con reinicio automático. \\
+RNF-05 & Cada segmento SPI se valida con CRC-16/CCITT-FALSE. \\
+RNF-06 & El ESP32-S3 no reemplaza la ventana que está entregando hasta completar sus cinco segmentos. \\
+RNF-07 & El sistema opera en red local sin dependencias de servicios externos. \\
+RNF-08 & La escritura de la ventana al servidor web es atómica (archivo temporal y \texttt{rename}). \\
+\bottomrule
+\end{tabular}
+\caption{Requerimientos no funcionales.}
+\end{table}
+
+\subsection{Restricciones del sistema}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{4.0cm} p{8.3cm}@{}}
+\toprule
+\textbf{Restricción} & \textbf{Valor de diseño} \\
+\midrule
+Ventana de captura & $N = 64$ muestras por canal \\
+Frecuencias de muestreo & 100, 1\,000, 10\,000 y 41\,667 Sa/s \\
+Resolución del ADC & 12 bits (entrada 0 a 3{,}1 V con atenuación de 12 dB) \\
+Tasa de refresco del dashboard & $0{,}25\,\text{Hz} \leq f_r \leq 1\,\text{Hz}$ (período de 4 s a 1 s) \\
+Modo SPI & Modo 0 (CPOL = 0, CPHA = 0), 8 bits por palabra \\
+Tamaño de transacción SPI & 64 bytes (límite del FIFO del esclavo en Zephyr) \\
+Tensión lógica & 3{,}3 V en ambos dispositivos \\
+Sistema operativo del SBC & Raspberry Pi OS (Linux) \\
+Servidor web & Nginx, configurado como servicio \\
+\bottomrule
+\end{tabular}
+\caption{Restricciones de diseño.}
+\end{table}
+
+% ============================================================
+% 4. PROTOCOLO
+% ============================================================
+\section{Protocolo y formato de trama}
+
+El driver del esclavo SPI del ESP32-S3 en Zephyr emplea el FIFO del periférico y limita cada activación de CS a \textbf{64 bytes}. Una ventana completa se transmite por eso en \textbf{cinco segmentos de 64 bytes}, cada uno en una transacción SPI full duplex: por MISO viaja el segmento de datos y por MOSI un comando de la Raspberry Pi. La especificación completa está en el archivo \texttt{Protocolo\_SPI.md} del repositorio.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{1.6cm} p{1.4cm} p{2.4cm} p{6.4cm}@{}}
+\toprule
+\textbf{Offset} & \textbf{Bytes} & \textbf{Campo} & \textbf{Descripción} \\
+\midrule
+0  & 1  & SYNC    & \texttt{0xA5} \\
+1  & 1  & IDX     & Índice del segmento (0 a 4); \texttt{0xFF} indica que aún no hay ventana \\
+2  & 2  & WSEQ    & Contador de ventana (little-endian); sus saltos revelan ventanas no leídas \\
+4  & 1  & PRESET  & Preset con el que se capturó la ventana \\
+5  & 1  & CMD\_ACK & Número del último comando ejecutado \\
+6  & 56 & PAYLOAD & Fragmento IDX del \emph{stream} de la ventana \\
+62 & 2  & CRC16   & CRC-16/CCITT-FALSE de los bytes 0 a 61 \\
+\bottomrule
+\end{tabular}
+\caption{Segmento ESP32-S3 $\rightarrow$ Raspberry Pi (64 bytes).}
+\end{table}
+
+El \emph{stream} de la ventana ($5 \times 56 = 280$ bytes) contiene un encabezado de 8 bytes (frecuencia de muestreo en Sa/s, número de muestras, número de canales y resolución), los 256 bytes de datos (64 pares CH1/CH2 de 16 bits, en este orden) y 16 bytes de relleno.
+
+El comando de la Raspberry Pi (primeros 8 bytes de MOSI) tiene el formato \texttt{SYNC=0x5A, CMD, ARG, CMD\_SEQ, 2 bytes reservados, CRC16}. Los comandos son NOP, SET\_PRESET (ARG = 0 a 3) y RESYNC. La Raspberry Pi repite el comando hasta ver su número en \texttt{CMD\_ACK}; el esclavo ignora números repetidos, de modo que la entrega es fiable e idempotente.
+
+Como el esclavo no puede iniciar una transferencia ni avisar que hay un dato disponible, la Raspberry Pi consulta periódicamente. Entre dos transacciones se respeta un tiempo de guarda configurable (150 $\mu$s por defecto) para que el ESP32-S3 se rearme.
+
+% ============================================================
+% 5. ESTIMACIÓN TEÓRICA DE LA TASA SPI
+% ============================================================
+\section{Estimación teórica de la tasa de transferencia SPI}
+
+\subsection{Modelo de la trama}
+
+Cada ventana contiene $N = 64$ muestras por canal, $C = 2$ canales y $b_s = 2$ bytes por muestra (la muestra de 12 bits se alinea a 16). En el bus viajan $S = 5$ segmentos de $L = 64$ bytes:
+
+\begin{align}
+B_{datos} &= N \cdot C \cdot b_s = 64 \cdot 2 \cdot 2 = 256 \ \text{bytes} \\
+B_{bus} &= S \cdot L = 5 \cdot 64 = 320 \ \text{bytes} = 2\,560 \ \text{bits}
+\end{align}
+
+\subsection{Tiempo de transferencia y ciclo de trabajo}
+
+El tiempo que ocupan los bits de una ventana a frecuencia de reloj $f_{SPI}$ es:
+
+\begin{equation}
+t_{tx} = \frac{B_{bus} \cdot 8}{f_{SPI}} = \frac{2\,560}{f_{SPI}}
+\end{equation}
+
+El período de captura de una ventana a frecuencia de muestreo $f_s$ es $T_w = N / f_s$. El ciclo de trabajo del bus (solo bits de reloj, sin tiempos de guarda) es:
+
+\begin{equation}
+D = \frac{t_{tx}}{T_w} = \frac{2\,560 \, f_s}{N \, f_{SPI}}
+\end{equation}
+
+La eficiencia del enlace, definida como la fracción de bytes del bus que son datos del ADC, es:
+
+\begin{equation}
+\eta = \frac{B_{datos}}{B_{bus}} = \frac{256}{320} = 80\,\%
+\end{equation}
+
+\subsection{Comparativa por preset}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{2.2cm} p{2.3cm} p{2.6cm} p{2.6cm} p{2.6cm} p{2.6cm}@{}}
+\toprule
+\textbf{$f_s$ (Sa/s)} & \textbf{$T_w$} & \textbf{$t_{tx}$ a 10 MHz} & \textbf{$D$ a 10 MHz} & \textbf{$t_{tx}$ a 20 MHz} & \textbf{$D$ a 20 MHz} \\
+\midrule
+100     & 640 ms    & 256 $\mu$s & 0{,}04\,\% & 128 $\mu$s & 0{,}02\,\% \\
+1\,000  & 64 ms     & 256 $\mu$s & 0{,}40\,\% & 128 $\mu$s & 0{,}20\,\% \\
+10\,000 & 6{,}4 ms  & 256 $\mu$s & 4{,}0\,\%  & 128 $\mu$s & 2{,}0\,\% \\
+41\,667 & 1{,}536 ms & 256 $\mu$s & 16{,}7\,\% & 128 $\mu$s & 8{,}3\,\% \\
+\bottomrule
+\end{tabular}
+\caption{Tiempo de transferencia y ciclo de trabajo del bus SPI por preset (solo bits de reloj).}
+\end{table}
+
+El requerimiento RNF-02 ($D < 15\,\%$ a 41\,667 Sa/s) se cumple con reloj mayor o igual a $\approx$ 11{,}1 MHz; con los divisores del SPI0 de la Raspberry Pi 4 esto exige 15{,}625 MHz. A 7{,}8 MHz el ciclo de trabajo sería de $\approx$ 21\,\%.
+
+\subsection{Tasa máxima teórica}
+
+Si el bus transmitiera de forma continua, sin tiempos de guarda, la tasa máxima de pares de muestras sería:
+
+\begin{equation}
+f_{s,\max} = \frac{N \cdot f_{SPI}}{B_{bus} \cdot 8} = \frac{64 \cdot f_{SPI}}{2\,560} = \frac{f_{SPI}}{40}
+\end{equation}
+
+Con $f_{SPI} = 10$ MHz resulta $f_{s,\max} = 250$ kSa/s, y con 20 MHz resulta 500 kSa/s. Ambos valores superan con amplio margen el límite del ADC (41\,667 Sa/s por canal), por lo que el cuello de botella real no es la tasa de bits del bus sino: (i) el tiempo de guarda entre las cinco transacciones de cada ventana, (ii) la latencia del \texttt{ioctl} de \texttt{spidev} y (iii) el tiempo de rearme del esclavo. Estas contribuciones se miden experimentalmente (ver documento de pruebas).
+
+% ============================================================
+% 6. DIAGRAMAS DE FLUJO
+% ============================================================
+\section{Diagramas de flujo}
+
+\subsection{Firmware del ESP32-S3: hilo de adquisición}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm and 1cm]
+  \node[inicio] (ini) {Inicio};
+  \node[proc, below=of ini] (cfg) {Configurar ADC1 (CH1, CH2), DMA, anillo de 3 slots; preset por defecto: 100 Sa/s};
+  \node[proc, below=of cfg] (pre) {Leer preset solicitado (puede haber cambiado por SPI o por el monitor serie)};
+  \node[dec, below=of pre] (modo) {¿Preset en modo DMA?};
+  \node[proc, below=of modo] (dma) {Ráfaga DMA de 64 pares con intervalo constante};
+  \node[proc, right=1.6cm of dma] (tim) {64 ticks absolutos de 10 ms; leer el par en cada tick};
+  \node[proc, below=of dma] (pub) {Publicar la ventana en el slot libre del anillo};
+  \node[proc, below=of pub] (ser) {Copiar la ventana para el monitor serie; incrementar WSEQ};
+
+  \draw[flujo] (ini) -- (cfg);
+  \draw[flujo] (cfg) -- (pre);
+  \draw[flujo] (pre) -- (modo);
+  \draw[flujo] (modo) -- node[right, font=\footnotesize] {sí} (dma);
+  \draw[flujo] (modo.east) -| node[above, font=\footnotesize, pos=0.2] {no} (tim.north);
+  \draw[flujo] (dma) -- (pub);
+  \draw[flujo] (tim.south) |- (pub.east);
+  \draw[flujo] (pub) -- (ser);
+  \draw[flujo] (ser.west) -- ++(-1.2,0) |- (pre.west);
+\end{tikzpicture}
+\caption{Diagrama de flujo del hilo de adquisición del firmware.}
+\label{fig:flujo_acq}
+\end{figure}
+
+\subsection{Firmware del ESP32-S3: hilo del esclavo SPI}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm and 1cm]
+  \node[inicio] (i) {Inicio del hilo};
+  \node[dec, below=of i] (s0) {¿Segmento 0?};
+  \node[proc, below=of s0] (frz) {Congelar la ventana más reciente (slot en uso)};
+  \node[proc, below=of frz] (seg) {Construir segmento: cabecera, 56 bytes, CRC-16};
+  \node[proc, below=of seg] (tx) {Esperar transacción SPI de 64 bytes (CS); intercambiar MISO/MOSI};
+  \node[dec, below=of tx] (ok) {¿64 bytes completos?};
+  \node[proc, below=of ok] (cmd) {Validar comando (sync, CRC); ejecutar SET\_PRESET o RESYNC si es nuevo};
+  \node[proc, below=of cmd] (av) {Avanzar segmento (módulo 5)};
+
+  \draw[flujo] (i) -- (s0);
+  \draw[flujo] (s0) -- node[right, font=\footnotesize] {sí} (frz);
+  \draw[flujo] (frz) -- (seg);
+  \draw[flujo] (s0.east) -- node[above, font=\footnotesize] {no} ++(2.2,0) |- (seg.east);
+  \draw[flujo] (seg) -- (tx);
+  \draw[flujo] (tx) -- (ok);
+  \draw[flujo] (ok) -- node[right, font=\footnotesize] {sí} (cmd);
+  \draw[flujo] (ok.west) -- node[above, font=\footnotesize] {no: repetir} ++(-1.6,0) |- (seg.west);
+  \draw[flujo] (cmd) -- (av);
+  \draw[flujo] (av.west) -- ++(-3.4,0) |- (s0.west);
+\end{tikzpicture}
+\caption{Diagrama de flujo del hilo del esclavo SPI.}
+\label{fig:flujo_spi}
+\end{figure}
+
+\subsection{Software en Linux (Raspberry Pi)}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm and 1cm]
+  \node[inicio] (s0) {Inicio del servicio};
+  \node[proc, below=of s0] (s1) {Abrir \texttt{/dev/spidev0.0}: modo 0, 8 bits y velocidad configurada};
+  \node[proc, below=of s1] (s2) {Transacción de 64 bytes: enviar comando pendiente o NOP; recibir segmento};
+  \node[dec, below=of s2] (s3) {¿Sync y CRC válidos?};
+  \node[proc, below=of s3] (s4) {Ensamblar segmentos consecutivos con igual WSEQ};
+  \node[dec, below=of s4] (s5) {¿Ventana completa (5 segmentos)?};
+  \node[proc, below=of s5] (s6) {Guardar como última ventana; contar ventanas perdidas por salto de WSEQ};
+  \node[dec, below=of s6] (s7) {¿Transcurrió el período de refresco $T_r$?};
+  \node[proc, below=of s7] (s8) {Escribir JSON en archivo temporal y \texttt{rename} atómico};
+  \node[proc, left=2.2cm of s3] (e1) {Descartar y contar el error; esperar IDX = 0};
+
+  \draw[flujo] (s0) -- (s1);
+  \draw[flujo] (s1) -- (s2);
+  \draw[flujo] (s2) -- (s3);
+  \draw[flujo] (s3) -- node[right, font=\footnotesize] {sí} (s4);
+  \draw[flujo] (s3.west) -- node[above, font=\footnotesize] {no} (e1.east);
+  \draw[flujo] (e1.north) |- (s2.west);
+  \draw[flujo] (s4) -- (s5);
+  \draw[flujo] (s5) -- node[right, font=\footnotesize] {sí} (s6);
+  \draw[flujo] (s5.east) -- node[above, font=\footnotesize] {no} ++(2.4,0) |- (s2.east);
+  \draw[flujo] (s6) -- (s7);
+  \draw[flujo] (s7) -- node[right, font=\footnotesize] {sí} (s8);
+  \draw[flujo] (s7.east) -- ++(2.4,0) |- (s2.east);
+  \draw[flujo] (s8.east) -- ++(2.8,0) |- (s2.east);
+\end{tikzpicture}
+\caption{Diagrama de flujo del servicio \texttt{oscd} en la Raspberry Pi.}
+\label{fig:flujo_sbc}
+\end{figure}
+
+\end{document}

@@ -1,0 +1,19 @@
+[Unit]
+Description=Osciloscopio - servicio de adquisicion SPI (ESP32-S3)
+After=local-fs.target
+Wants=nginx.service
+
+[Service]
+Type=simple
+# /run/osciloscopio es tmpfs; nginx lee window.json desde alli
+RuntimeDirectory=osciloscopio
+RuntimeDirectoryMode=0755
+# Ajustar --speed (Hz) y --gap-us segun los resultados de las pruebas
+ExecStart=/usr/local/bin/oscd --dev /dev/spidev0.0 --speed 8000000 --gap-us 150 --out /run/osciloscopio/window.json --port 8081 --refresh 1 --rt
+Restart=always
+RestartSec=1
+Nice=-5
+User=root
+
+[Install]
+WantedBy=multi-user.target

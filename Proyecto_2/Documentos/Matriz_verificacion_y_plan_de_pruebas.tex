@@ -1,0 +1,278 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+
+\renewcommand{\contentsname}{Índice}
+\renewcommand{\tablename}{Tabla}
+
+\begin{document}
+
+% ============================================================
+% PORTADA
+% ============================================================
+\begin{titlepage}
+\centering
+{\large Universidad Nacional de Colombia --- Sede Manizales\par}
+{\large Facultad de Ingeniería y Arquitectura\par}
+{\large Carrera de Ingeniería Electrónica\par}
+\vspace{1.2cm}
+{\large Materia: \textbf{Programación de sistemas Linux embebido}\par}
+\vspace{1.8cm}
+{\LARGE\bfseries Sistema Híbrido de Adquisición Analógica mediante SPI\\[0.3cm]
+y Dashboard Embebido en Linux\par}
+\vspace{0.5cm}
+{\Large Documento 2: Matriz de verificación y plan de pruebas\par}
+\vspace{1.5cm}
+
+\small
+\begin{tabular}{@{}p{0.5cm} p{4.2cm} p{2.8cm} p{6.0cm}@{}}
+\toprule
+& \textbf{Integrante} & \textbf{C.C.} & \textbf{Rol técnico} \\
+\midrule
+1. & \hrulefill & \hrulefill & Ingeniero de Documentación Técnica y Gestión de Configuración \\[0.7cm]
+2. & \hrulefill & \hrulefill & Arquitecto de Sistemas Embebidos \\[0.7cm]
+3. & \hrulefill & \hrulefill & Ingeniero de Software y Firmware Embebido \\[0.7cm]
+4. & \hrulefill & \hrulefill & Ingeniero de Verificación y Validación (V\&V) \\[0.7cm]
+\bottomrule
+\end{tabular}
+
+\vfill
+Manizales, noviembre de 2026
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+% 1. ESTRATEGIA
+% ============================================================
+\section{Estrategia de diseño de experimentos}
+
+La verificación se organiza en tres niveles. Las pruebas unitarias del firmware del ESP32-S3 validan la adquisición y la comunicación SPI de forma aislada. Las pruebas unitarias de la Raspberry Pi validan el servicio SPI y el servidor HTTP. Las pruebas de integración verifican el sistema completo, incluidos el refresco del dashboard y el rendimiento del bus a las frecuencias de muestreo requeridas.
+
+Las pruebas de integración de tasa SPI se ejecutan a 100, 1\,000, 10\,000 y 41\,667 Sa/s. Los valores teóricos de referencia provienen del documento de arquitectura: cada ventana ocupa 320 bytes en el bus (5 segmentos de 64 bytes), es decir $t_{tx} = 2\,560 / f_{SPI}$ y ciclo de trabajo $D$ entre 0{,}02\,\% y 8{,}3\,\% a 20 MHz (0{,}04\,\% y 16{,}7\,\% a 10 MHz).
+
+\subsection{Principio de ejecución por capas}
+
+Se recomienda ejecutar las pruebas en este orden, y no pasar a la capa siguiente hasta que la anterior esté aprobada, porque cada una asume que la anterior funciona:
+
+\begin{enumerate}
+  \item \textbf{ESP32-S3 aislado} (solo monitor serie): presets, duración de la ventana, desfase de canales. No requiere la Raspberry Pi.
+  \item \textbf{Calibración del ADC con señales conocidas:} 0 V (GND), 3{,}3 V y un divisor resistivo en cada canal para fijar ganancia y offset; después una señal periódica de frecuencia conocida (generador de funciones o un pin PWM filtrado con RC) para medir la $f_s$ real a partir de su período.
+  \item \textbf{Raspberry Pi aislada:} pruebas unitarias del protocolo en el host (\texttt{make test}), configuración de \texttt{spidev}, servicio y servidor HTTP con un \texttt{window.json} de prueba.
+  \item \textbf{Enlace SPI:} comenzar con \texttt{oscd --bench} a 1 MHz y subir (4, 8, 15{,}6 MHz) registrando errores de CRC y tiempos. Ajustar \texttt{--gap-us} al mínimo estable. Medir con analizador lógico en SCLK y CS.
+  \item \textbf{Integración:} refresco del dashboard, cambio de preset desde la interfaz y prueba de estabilidad de 5 minutos en cada preset.
+\end{enumerate}
+
+\subsection{Instrumentación y registro}
+
+\begin{itemize}
+  \item \textbf{Analizador lógico} (por ejemplo de 8 canales a 24 MHz o más, con \texttt{sigrok}/PulseView) conectado a SCLK, CS y MISO: mide $t_{tx}$, el tiempo de guarda efectivo y la frecuencia real del reloj. Para 15{,}6 MHz se recomienda un analizador de al menos 100 MS/s; si solo se dispone de 24 MS/s se mide el período de CS y el número de flancos, no la forma del reloj.
+  \item \textbf{Generador de funciones} para la verificación de $f_s$ y de ganancia. Alternativa sin instrumento: un pin PWM del propio ESP32-S3 filtrado con RC (señal de 0 a 3{,}3 V de frecuencia exacta).
+  \item \textbf{Herramientas de software:} \texttt{oscd --bench N} (tiempos por transacción, ventanas perdidas, errores), \texttt{curl} para la API y el JSON, herramientas de desarrollo del navegador para los intervalos de refresco.
+  \item \textbf{Registro:} cada prueba guarda su evidencia (log o captura) en \texttt{Documentos/Resultados\_Pruebas/} con el nombre del identificador de la prueba, y se actualiza la columna \emph{Estado} de la matriz con el valor medido.
+\end{itemize}
+
+\subsection{Pruebas unitarias en el ESP32-S3}
+
+\begin{itemize}
+  \item Verificación de la duración de la ventana y de la $f_s$ efectiva en cada preset.
+  \item Verificación de la conversión del ADC en ambos canales y del desfase CH1/CH2.
+  \item Verificación del llenado de 64 muestras por canal y del anillo de tres slots.
+  \item Verificación del segmento SPI (encabezado, datos y CRC-16).
+  \item Verificación de la recepción y ejecución de comandos de preset.
+\end{itemize}
+
+\subsection{Pruebas unitarias en la Raspberry Pi}
+
+\begin{itemize}
+  \item Verificación de la configuración de \texttt{spidev} (modo, velocidad y tamaño de palabra).
+  \item Verificación de la validación de CRC y del descarte de tramas corruptas.
+  \item Verificación de la escritura atómica del archivo de la última ventana.
+  \item Verificación del servidor HTTP (Nginx) y de la entrega del JSON.
+  \item Verificación del período de refresco entre 4 s y 1 s.
+\end{itemize}
+
+\subsection{Pruebas de integración}
+
+\begin{itemize}
+  \item Actualización de extremo a extremo del dashboard a 0{,}25 Hz y 1 Hz.
+  \item Verificación experimental de la tasa de transferencia SPI frente a la teórica.
+  \item Cambio de preset desde el dashboard.
+  \item Verificación del preset de bonificación a 41\,667 Sa/s.
+\end{itemize}
+
+% ============================================================
+% 2. MATRIZ
+% ============================================================
+\section{Matriz de verificación}
+
+La columna de estado se completa durante la ejecución de cada prueba. Los valores teóricos provienen de la estimación del documento de arquitectura. Las pruebas \emph{Parcial} tienen una parte ejecutada (ver Sección~\ref{sec:resultados}) y otra pendiente.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{@{}p{1.3cm} p{1.7cm} p{3.3cm} p{1.7cm} p{3.0cm} p{2.5cm} p{1.4cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Componente} & \textbf{Descripción} & \textbf{$f_s$ (Sa/s)} & \textbf{Criterio de aceptación} & \textbf{Resultado teórico} & \textbf{Estado} \\
+\midrule
+UT-MCU-01 & ESP32-S3 & Duración de la ventana y $f_s$ efectiva por preset & 100; 1\,000; 10\,000; 41\,667 & $f_s$ real dentro de $\pm 1\,\%$ (con señal de frecuencia conocida) & $T_w = 64/f_s$ & Parcial \\
+UT-MCU-02 & ESP32-S3 & Conversión del ADC en CH1 y CH2 y orden de canales & 1\,000 & Ganancia y offset dentro de la tolerancia del ADC; CH1 y CH2 no intercambiados & Ajuste lineal 0 a 4095 & Pendiente \\
+UT-MCU-03 & ESP32-S3 & Llenado de 64 pares por ventana & 100; 1\,000; 10\,000; 41\,667 & 64 muestras por canal por ventana, sin errores del ADC & 64 pares & Aprobada \\
+UT-MCU-04 & ESP32-S3 & Anillo de 3 slots bajo lectura SPI & 41\,667 & Ninguna ventana alterada durante su entrega & Cero ventanas corruptas & Pendiente \\
+UT-MCU-05 & ESP32-S3 & Segmento SPI (cabecera, datos y CRC) & 1\,000 & CRC válido en 100\,\% de los segmentos & 64 bytes por segmento & Parcial \\
+UT-MCU-06 & ESP32-S3 & Ejecución de comando de preset & 100 a 41\,667 & Cambio de frecuencia en $\leq$ 1 ventana & Cambio en $\leq$ 1 $T_w$ & Parcial \\
+UT-SBC-01 & Raspberry Pi & Configuración de \texttt{spidev} & 1\,000 & Modo 0, velocidad y 8 bits confirmados & Parámetros aplicados & Pendiente \\
+UT-SBC-02 & Raspberry Pi & Validación de CRC y descarte & 10\,000 & Tramas corruptas descartadas y reintentadas & 0 tramas corruptas aceptadas & Parcial \\
+UT-SBC-03 & Raspberry Pi & Escritura atómica del archivo de ventana & 1\,000 & Lectura nunca parcial desde el servidor & Archivo consistente & Pendiente \\
+UT-SBC-04 & Servidor HTTP & Entrega del JSON de la última ventana & 1\,000 & HTTP 200 y JSON válido & Respuesta en $\leq$ 100 ms & Pendiente \\
+UT-SBC-05 & Servicio systemd & Reinicio automático del servicio & --- & Servicio activo tras fallo simulado & Reinicio en $\leq$ 5 s & Pendiente \\
+IT-01 & Sistema & Refresco del dashboard a 0{,}25 Hz & 1\,000 & Actualización cada 4 s $\pm$ 0{,}2 s & $T_r = 4$ s & Pendiente \\
+IT-02 & Sistema & Refresco del dashboard a 1 Hz & 1\,000 & Actualización cada 1 s $\pm$ 0{,}1 s & $T_r = 1$ s & Pendiente \\
+IT-03 & Enlace SPI & Transferencia de ventana a 100 Sa/s & 100 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}02\,\%$ (20 MHz) & Pendiente \\
+IT-04 & Enlace SPI & Transferencia de ventana a 1\,000 Sa/s & 1\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}20\,\%$ (20 MHz) & Pendiente \\
+IT-05 & Enlace SPI & Transferencia de ventana a 10\,000 Sa/s & 10\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 2{,}0\,\%$ (20 MHz) & Pendiente \\
+IT-06 & Enlace SPI & Transferencia de ventana a 41\,667 Sa/s & 41\,667 & $t_{tx}$ medido $\approx$ teórico y $D < 15\,\%$ & $D = 8{,}3\,\%$ (20 MHz) & Pendiente \\
+IT-07 & Sistema & Preset de bonificación de extremo a extremo & 41\,667 & Dashboard muestra la señal durante 5 min sin errores de CRC; huecos de WSEQ medidos y documentados & $f_s \geq$ 40\,000 & Pendiente \\
+IT-08 & Sistema & Cambio de preset desde el dashboard & 100 a 41\,667 & La ventana siguiente al comando usa el nuevo preset en $\leq$ 2 ventanas + 1 refresco & Cambio en $\leq$ 2 $T_w$ & Pendiente \\
+\bottomrule
+\end{tabular}
+\caption{Matriz de verificación del sistema.}
+\label{tab:matriz}
+\end{table}
+
+% ============================================================
+% 3. UNITARIAS
+% ============================================================
+\section{Casos de prueba unitarios}
+
+\subsection{ESP32-S3: adquisición y comunicación SPI}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{2.2cm} p{5.3cm} p{6.3cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Procedimiento} & \textbf{Resultado esperado} \\
+\midrule
+UT-MCU-01 & Seleccionar cada preset (teclas 0 a 3 del monitor serie) y leer \texttt{t\_adc\_read}. Después, aplicar una señal periódica conocida y calcular $f_s$ a partir de su período en la ventana. & Duración compatible con $64/f_s$ más el arranque fijo de la ráfaga; $f_s$ real dentro de $\pm 1\,\%$. \\
+UT-MCU-02 & Conectar cada canal a GND, a 3{,}3 V y a un divisor resistivo; registrar los códigos. Aplicar una tensión distinta en cada canal para comprobar el orden CH1/CH2. & Códigos acordes con el ajuste lineal; el canal de cada GPIO corresponde al índice esperado. \\
+UT-MCU-03 & Contar los valores por canal en cada línea \texttt{WIN} del monitor serie. & Exactamente 64 muestras por canal en cada ventana y \texttt{err\_adc = 0}. \\
+UT-MCU-04 & Con el preset de 41\,667 Sa/s, leer ventanas por SPI durante 60 s y comprobar que cada ventana recibida es consistente (misma \texttt{WSEQ} en los 5 segmentos, rampa de prueba sin discontinuidades). & Ninguna ventana mezclada o alterada. \\
+UT-MCU-05 & Comparar el CRC calculado en el chip con el vector estándar y validar los segmentos recibidos en la Raspberry Pi. & CRC \texttt{0x29B1} para el vector de prueba; 100\,\% de segmentos válidos. \\
+UT-MCU-06 & Enviar SET\_PRESET por SPI y medir en cuántas ventanas cambia la \texttt{fs} del encabezado. & Cambio en la ventana siguiente y sin reinicio del firmware. \\
+\bottomrule
+\end{tabular}
+\caption{Casos de prueba unitarios del ESP32-S3.}
+\end{table}
+
+\subsection{Raspberry Pi: servicio SPI y servidor HTTP}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{2.2cm} p{5.3cm} p{6.3cm}@{}}
+\toprule
+\textbf{ID} & \textbf{Procedimiento} & \textbf{Resultado esperado} \\
+\midrule
+UT-SBC-01 & Ejecutar \texttt{oscd --bench 1} y leer la línea \texttt{spidev} que imprime el servicio. & Modo 0, 8 bits y velocidad máxima igual a la solicitada. \\
+UT-SBC-02 & Ejecutar \texttt{make test} (host) y, en la Raspberry Pi, provocar errores en el bus (cables largos o reloj excesivo) y revisar los contadores. & Tramas corruptas descartadas y contadas; ninguna trama corrupta publicada. \\
+UT-SBC-03 & Leer \texttt{window.json} en un bucle mientras el servicio lo reescribe, validando cada lectura con \texttt{python3 -m json.tool}. & Ninguna lectura parcial. \\
+UT-SBC-04 & Solicitar \texttt{/data/window.json} con \texttt{curl} durante 60 s. & HTTP 200, JSON válido y respuesta en $\leq$ 100 ms. \\
+UT-SBC-05 & Terminar el proceso con \texttt{kill -9}. & Reinicio automático en $\leq$ 5 s. \\
+\bottomrule
+\end{tabular}
+\caption{Casos de prueba unitarios de la Raspberry Pi.}
+\end{table}
+
+% ============================================================
+% 4. INTEGRACIÓN
+% ============================================================
+\section{Casos de prueba de integración}
+
+\subsection{Refresco del dashboard (0{,}25 Hz y 1 Hz)}
+
+\begin{enumerate}
+  \item Configurar la tasa de refresco en 0{,}25 Hz desde el dashboard (o con \texttt{curl -X POST '/api/refresh?hz=0.25'}).
+  \item Registrar con las herramientas de desarrollo del navegador las marcas de tiempo de cada solicitud a \texttt{window.json} durante 5 minutos.
+  \item Calcular el intervalo entre solicitudes y comparar con $T_r = 4$ s.
+  \item Repetir los pasos 1 a 3 con 1 Hz ($T_r = 1$ s).
+  \item Criterio de aceptación: intervalo medido dentro de $\pm 0{,}2$ s (0{,}25 Hz) y $\pm 0{,}1$ s (1 Hz).
+\end{enumerate}
+
+\subsection{Verificación experimental de la tasa SPI}
+
+\begin{enumerate}
+  \item Fijar la velocidad solicitada del SPI en la Raspberry Pi y registrar la frecuencia de reloj real con el analizador lógico.
+  \item Para cada preset (100, 1\,000, 10\,000 y 41\,667 Sa/s), ejecutar \texttt{oscd --bench 1000} y capturar con el analizador lógico SCLK y CS.
+  \item Medir el tiempo entre el flanco de bajada y el de subida de CS para cada segmento y el tiempo entre segmentos; el de ventana es la suma de los cinco segmentos y sus guardas.
+  \item Calcular el promedio y la desviación estándar de $t_{tx}$ (solo bits de reloj: $5 \times 512 / f_{SPI}$).
+  \item Comparar contra $t_{tx}^{teo} = 2\,560/f_{SPI}$ y calcular el error relativo:
+\end{enumerate}
+
+\begin{equation}
+\varepsilon = \frac{\bar{t}_{tx}^{exp} - t_{tx}^{teo}}{t_{tx}^{teo}} \cdot 100\,\%
+\end{equation}
+
+Adicionalmente se registra, con \texttt{oscd --bench}, el tiempo medio y máximo del \texttt{ioctl} por transacción, el número de ventanas por segundo y los contadores de ventanas perdidas, duplicadas y errores de CRC.
+
+\subsection{Protocolo de verificación a 41\,667 Sa/s (bonificación)}
+
+\begin{enumerate}
+  \item Configurar el preset 3 en el ESP32-S3 mediante comando SPI (dashboard o \texttt{oscd --preset 3}).
+  \item Comprobar con una señal de frecuencia conocida que la $f_s$ real es 41\,667 Sa/s $\pm 1\,\%$ (entonces $T_w = 1{,}536$ ms más el arranque de la ráfaga de $\approx$ 75 $\mu$s).
+  \item Registrar 5 minutos de adquisición con el dashboard activo a 1 Hz.
+  \item Registrar los contadores del servicio: ventanas recibidas, perdidas (saltos de \texttt{WSEQ}), errores de CRC y de sincronía. La captura es por refresco de ventanas, por lo que se espera que la Raspberry Pi no lea todas las ventanas; el criterio es \emph{cero ventanas corruptas} y que la ventana mostrada tenga la $f_s$ correcta.
+  \item Verificar que el ciclo de trabajo medido de los bits es $D < 15\,\%$.
+  \item Documentar cualquier desviación y su causa probable.
+\end{enumerate}
+
+% ============================================================
+% 5. RESULTADOS
+% ============================================================
+\section{Registro de resultados}
+\label{sec:resultados}
+
+\subsection{UT-MCU-01: duración de la ventana por preset (2 de noviembre de 2026)}
+
+Medido por software con el temporizador de ciclos del ESP32-S3 alrededor de la lectura de la ventana de 64 pares (\texttt{t\_adc\_read}), con las entradas sin señal conocida. Evidencia: \texttt{UT-MCU-01\_serial\_presets.log}.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{2.4cm} p{2.6cm} p{2.6cm} p{2.4cm} p{3.4cm}@{}}
+\toprule
+\textbf{Preset ($f_s$)} & \textbf{$T_w$ teórico} & \textbf{$T_w$ medido} & \textbf{Diferencia} & \textbf{Observación} \\
+\midrule
+100 Sa/s     & 640{,}000 ms & 640{,}093 ms & +0{,}09 ms (+0{,}01\,\%) & Temporizador absoluto \\
+1\,000 Sa/s  & 64{,}000 ms  & 64{,}318 ms  & +0{,}32 ms (+0{,}50\,\%) & Ráfaga DMA \\
+10\,000 Sa/s & 6{,}400 ms   & 6{,}492 ms   & +0{,}09 ms (+1{,}4\,\%)  & Ráfaga DMA \\
+41\,667 Sa/s & 1{,}536 ms   & 1{,}609 ms   & +0{,}07 ms (+4{,}8\,\%)  & Ráfaga DMA \\
+\bottomrule
+\end{tabular}
+\caption{Duración medida de la ventana. La diferencia en los presets DMA es compatible con un tiempo fijo de arranque de la ráfaga de 75 a 90 $\mu$s.}
+\end{table}
+
+La prueba queda \textbf{parcial}: confirma que la ráfaga completa de 64 pares dura lo esperado, pero la $f_s$ efectiva por canal debe confirmarse con una señal de frecuencia conocida (ver procedimiento). Con este resultado se confirma que el ADC del ESP32-S3 alcanza el preset de 41\,667 Sa/s por canal (83\,333 conversiones por segundo en total).
+
+\subsection{UT-MCU-03, UT-MCU-05, UT-MCU-06 y UT-SBC-02 (parciales)}
+
+\begin{itemize}
+  \item \textbf{UT-MCU-03 (aprobada):} cada línea \texttt{WIN} del monitor serie contiene 64 valores por canal y el contador \texttt{err\_adc} permaneció en 0 durante todas las capturas.
+  \item \textbf{UT-MCU-05 (parcial):} el CRC-16 del vector \texttt{"123456789"} calculado en el chip es \texttt{0x29B1} (evidencia \texttt{UT-MCU-05\_crc\_autotest.log}). Falta validar segmentos reales recibidos por la Raspberry Pi.
+  \item \textbf{UT-MCU-06 (parcial):} el cambio de preset por teclado del monitor serie se refleja en la ventana siguiente en los cuatro presets. Falta repetir la prueba con el comando SPI.
+  \item \textbf{UT-SBC-02 (parcial):} el protocolo de la Raspberry Pi pasa 11 comprobaciones en el host, entre ellas el descarte de una trama con un bit alterado y una con sincronía errónea (evidencia \texttt{UT-SBC-02\_test\_protocol\_host.log}). Falta la prueba sobre el bus real.
+\end{itemize}
+
+\subsection{Hallazgo abierto sobre las entradas}
+
+Durante UT-MCU-01, con las entradas sin señal conectada, CH1 (GPIO1) leyó constantemente 0 y CH2 (GPIO2) mostró un patrón periódico compatible con acoplamiento de red eléctrica (armónico de 120 Hz muestreado a 100 Sa/s, alias de 20 Hz). Esto debe resolverse en UT-MCU-02 conectando GND, 3{,}3 V y un divisor a cada canal: comprobar que CH1 no está a tierra y que el orden CH1/CH2 de la ráfaga DMA es el esperado.
+
+\end{document}

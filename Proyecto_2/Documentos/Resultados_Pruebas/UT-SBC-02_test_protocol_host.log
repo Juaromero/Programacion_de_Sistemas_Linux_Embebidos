@@ -1,0 +1,18 @@
+Prueba: UT-SBC-02 (parcial) - validacion de CRC y descarte, ejecutada en el host (WSL Ubuntu, gcc)
+Fecha: 2026-11-02
+Comando: make -C Proyecto_2/Codigo/Software_RPi test
+
+ok:   CRC-16/CCITT-FALSE vector 0x29B1
+ok:   segmento valido parseado
+ok:   segmento valido parseado
+ok:   segmento valido parseado
+ok:   segmento valido parseado
+ok:   segmento valido parseado
+ok:   bit corrupto -> CRC invalido (descarte)
+ok:   sync incorrecto -> descarte
+ok:   encabezado de ventana
+ok:   intercalado CH1/CH2
+ok:   comando SET_PRESET con CRC
+RESULTADO: OK (0 fallos)
+
+Pendiente: repetir en la Raspberry Pi con tramas corruptas reales sobre el bus.

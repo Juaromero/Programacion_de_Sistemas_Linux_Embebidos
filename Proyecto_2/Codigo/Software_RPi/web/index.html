@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Osciloscopio ESP32-S3 + Raspberry Pi</title>
+<link rel="stylesheet" href="uPlot.min.css">
+<style>
+  :root { --bg:#10141a; --panel:#1a212b; --fg:#e8edf2; --mut:#8b98a8; --ch1:#f5a623; --ch2:#4fc3f7; --ok:#4cd07d; --bad:#ff6b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui, sans-serif; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:12px 20px; background:var(--panel); }
+  h1 { font-size:18px; margin:0; font-weight:600; }
+  .badge { padding:3px 10px; border-radius:12px; font-size:13px; background:#2a3442; }
+  .badge.ok { color:var(--ok); } .badge.bad { color:var(--bad); }
+  main { padding:16px 20px; display:grid; gap:16px; grid-template-columns: 1fr; max-width:1200px; margin:auto; }
+  .card { background:var(--panel); border-radius:8px; padding:14px 16px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  button, select { background:#2a3442; color:var(--fg); border:1px solid #3a4658; border-radius:6px; padding:7px 12px; font:inherit; cursor:pointer; }
+  button.active { background:#2f6fb5; border-color:#4a8fd8; }
+  button:hover { filter:brightness(1.15); }
+  .legend span { display:inline-flex; align-items:center; gap:6px; margin-right:16px; }
+  .legend i { display:inline-block; width:14px; height:3px; }
+  table { border-collapse:collapse; width:100%; }
+  td { padding:4px 8px; border-bottom:1px solid #2a3442; } td:first-child { color:var(--mut); width:55%; }
+  #plot { min-height:360px; }
+  .u-legend { display:none; }
+  .u-axis { color:var(--mut); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Osciloscopio de 2 canales &mdash; ESP32-S3 + Raspberry Pi 4</h1>
+  <div class="row"><span id="state" class="badge">conectando&hellip;</span><span id="info" class="badge">&mdash;</span></div>
+</header>
+<main>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="legend"><span><i style="background:var(--ch1)"></i>CH1 (GPIO1)</span><span><i style="background:var(--ch2)"></i>CH2 (GPIO2)</span></div>
+      <div class="row">
+        <span style="color:var(--mut)">Muestreo:</span>
+        <button data-p="0">100 Sa/s</button><button data-p="1">1 kSa/s</button><button data-p="2">10 kSa/s</button><button data-p="3">41,7 kSa/s</button>
+        <span style="color:var(--mut);margin-left:12px">Refresco:</span>
+        <select id="hz"><option value="0.25">0,25 Hz (4 s)</option><option value="0.5">0,5 Hz (2 s)</option><option value="1" selected>1 Hz (1 s)</option></select>
+      </div>
+    </div>
+    <div id="plot"></div>
+  </div>
+  <div class="card">
+    <table id="stats"></table>
+  </div>
+</main>
+<script src="uPlot.iife.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  const PRESETS = [100, 1000, 10000, 41667];
+  const $ = (id) => document.getElementById(id);
+  let plot = null, timer = null, refreshHz = 1.0, lastSeq = null, lastOk = 0;
+
+  function mkPlot() {
+    const w = $("plot").clientWidth || 900;
+    plot = new uPlot({
+      width: w, height: 360, legend: { show: false }, cursor: { drag: { x: false, y: false } },
+      scales: { x: { time: false }, y: { range: [0, 3.3] } },
+      axes: [
+        { stroke: "#8b98a8", grid: { stroke: "#26303d" }, label: "tiempo (ms)" },
+        { stroke: "#8b98a8", grid: { stroke: "#26303d" }, label: "tensión (V)" }
+      ],
+      series: [{}, { stroke: "#f5a623", width: 2 }, { stroke: "#4fc3f7", width: 2 }]
+    }, [[0], [0], [0]], $("plot"));
+  }
+
+  function render(d) {
+    const dt = 1000 / d.fs, vk = d.vfs_mv / 4095 / 1000;
+    const t = d.ch1.map((_, i) => i * dt);
+    plot.setData([t, d.ch1.map(v => v * vk), d.ch2.map(v => v * vk)]);
+    document.querySelectorAll("button[data-p]").forEach(b =>
+      b.classList.toggle("active", Number(b.dataset.p) === d.preset));
+    $("info").textContent = "ventana #" + d.seq + " · " + d.fs + " Sa/s · " + d.n + " muestras";
+    const s = d.stats, rows = [
+      ["Ventanas recibidas", s.windows], ["Ventanas perdidas (huecos de secuencia)", s.lost],
+      ["Duplicadas (misma ventana releída)", s.dup], ["Errores de CRC", s.crc_err],
+      ["Errores de sincronía", s.sync_err], ["Errores de E/S SPI", s.io_err],
+      ["Resincronizaciones", s.soft_resync], ["Reloj SPI configurado", (s.spi_hz / 1e6).toFixed(2) + " MHz"],
+      ["Tiempo medio por transacción de 64 B", s.seg_avg_us + " µs"],
+      ["Refresco del dashboard", d.refresh_hz.toFixed(2) + " Hz"]
+    ];
+    $("stats").innerHTML = rows.map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("");
+  }
+
+  function setState(ok, text) {
+    const e = $("state"); e.textContent = text; e.className = "badge " + (ok ? "ok" : "bad");
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch("/data/window.json?t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      lastOk = Date.now();
+      render(d);
+      setState(true, d.seq === lastSeq ? "sin ventana nueva" : "en vivo");
+      lastSeq = d.seq;
+      if (Math.abs(d.refresh_hz - refreshHz) > 1e-6) { refreshHz = d.refresh_hz; $("hz").value = String(d.refresh_hz); schedule(); }
+    } catch (e) {
+      setState(false, "sin datos (" + e.message + ")");
+    }
+  }
+
+  function schedule() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(poll, 1000 / refreshHz);
+  }
+
+  async function post(url) {
+    try { await fetch(url, { method: "POST" }); } catch (e) { setState(false, "error de API"); }
+  }
+
+  document.querySelectorAll("button[data-p]").forEach(b =>
+    b.addEventListener("click", () => post("/api/preset?id=" + b.dataset.p)));
+  $("hz").addEventListener("change", async (ev) => {
+    await post("/api/refresh?hz=" + ev.target.value);
+    refreshHz = Number(ev.target.value); schedule();
+  });
+  window.addEventListener("resize", () => plot && plot.setSize({ width: $("plot").clientWidth, height: 360 }));
+
+  mkPlot(); poll(); schedule();
+})();
+</script>
+</body>
+</html>
