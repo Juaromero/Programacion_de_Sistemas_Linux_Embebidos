@@ -196,7 +196,7 @@ source ~/zephyrproject/.venv/bin/activate
 cd ~/zephyrproject
 R=/mnt/c/Users/juaro/OneDrive/Desktop
 P=$R/Programacion_de_Sistemas_Linux_Embebidos
-APP=$P/Proyecto_2/Codigo/Firmware_ESP32S3
+APP=$P/Osciloscopio/Codigo/Firmware_ESP32S3
 west build -p auto -b esp32s3_devkitc/esp32s3/procpu "$APP" \
   -d ~/build/osc
 west flash -d ~/build/osc --esp-device /dev/ttyUSB1

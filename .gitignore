@@ -5,7 +5,7 @@ build/
 *.bin
 *.map
 oscd
-Proyecto_2/Codigo/Software_RPi/tests/test_protocol
+Osciloscopio/Codigo/Software_RPi/tests/test_protocol
 
 # LaTeX
 *.aux
@@ -16,10 +16,16 @@ Proyecto_2/Codigo/Software_RPi/tests/test_protocol
 *.fls
 *.fdb_latexmk
 # ...pero los logs de evidencia de pruebas sí se versionan
-!Proyecto_2/Documentos/Resultados_Pruebas/*.log
+!Osciloscopio/Documentos/Resultados_Pruebas/*.log
+
+# Videos pesados (se publica un enlace en Osciloscopio/Video/README.md)
+Osciloscopio/Video/*.mp4
+Osciloscopio/Video/*.mov
+Osciloscopio/Video/*.mkv
+Osciloscopio/Video/*.avi
 
 # Transcripciones crudas de IA (revisar y depurar antes de publicar)
-Proyecto_2/Documentos/IA/Transcripciones_crudas/
+Osciloscopio/Documentos/IA/Transcripciones_crudas/
 
 # Sistema / editores
 .DS_Store

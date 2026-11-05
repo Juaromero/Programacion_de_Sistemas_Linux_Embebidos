@@ -1,4 +1,4 @@
-# Documentos LaTeX del Proyecto 2
+# Documentos LaTeX del proyecto Osciloscopio
 
 | Archivo | Contenido |
 |---|---|
@@ -20,6 +20,6 @@ Para cambiar nombres de integrantes, fecha o título del proyecto basta editar `
 make            # requiere latexmk y TeX Live/MiKTeX; genera ../PDF/*.pdf
 ```
 
-Sin instalar nada: subir esta carpeta completa a Overleaf (compilador pdfLaTeX) y compilar cada documento. Los documentos 1 y 7 incluyen `Circuito.png`, que está en `Proyecto_2/Imagenes/`: en Overleaf súbala también, junto a los `.tex`.
+Sin instalar nada: subir esta carpeta completa a Overleaf (compilador pdfLaTeX) y compilar cada documento. Los documentos 1 y 7 incluyen `Circuito.png`, que está en `Osciloscopio/Imagenes/`: en Overleaf súbala también, junto a los `.tex`.
 
 > Estado: estos documentos aún **no se han compilado** (no había distribución LaTeX en el equipo de trabajo). Si aparece algún error de compilación, repórtelo para corregirlo.

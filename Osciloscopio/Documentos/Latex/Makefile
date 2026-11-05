@@ -1,4 +1,4 @@
-# Compilación de los documentos del Proyecto 2.
+# Compilación de los documentos del proyecto Osciloscopio.
 # Requiere una distribución LaTeX con babel-spanish, tikz y booktabs (TeX Live o MiKTeX).
 #   make        -> genera los PDF en ../PDF
 #   make clean  -> borra auxiliares
