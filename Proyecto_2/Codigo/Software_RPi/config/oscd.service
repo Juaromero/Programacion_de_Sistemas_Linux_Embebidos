@@ -8,8 +8,8 @@ Type=simple
 # /run/osciloscopio es tmpfs; nginx lee window.json desde alli
 RuntimeDirectory=osciloscopio
 RuntimeDirectoryMode=0755
-# Ajustar --speed (Hz) y --gap-us segun los resultados de las pruebas
-ExecStart=/usr/local/bin/oscd --dev /dev/spidev0.0 --speed 8000000 --gap-us 150 --out /run/osciloscopio/window.json --port 8081 --refresh 1 --rt
+# 20 MHz y 150 us de guarda: valores estables medidos el 2026-11-05 (Documento 2)
+ExecStart=/usr/local/bin/oscd --dev /dev/spidev0.0 --speed 20000000 --gap-us 150 --out /run/osciloscopio/window.json --port 8081 --refresh 1 --rt
 Restart=always
 RestartSec=1
 Nice=-5

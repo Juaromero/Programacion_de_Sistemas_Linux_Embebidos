@@ -7,7 +7,7 @@ Repositorio de la materia **Programación de sistemas Linux embebido** (Ingenier
 | Componente | Detalle |
 |---|---|
 | SBC | **Raspberry Pi 4 Model B** (Raspberry Pi OS, Linux) |
-| Microcontrolador | **ESP32-S3-N16R8** (Xtensa LX7, 16 MB flash, 8 MB PSRAM) |
+| Microcontrolador | **ESP32-S3-DevKitC-1** con módulo **ESP32-S3-WROOM-1 N8R2** (Xtensa LX7, 8 MB flash, 2 MB PSRAM) |
 | RTOS del microcontrolador | **Zephyr 4.5** |
 | Toolchain | Zephyr SDK 1.0.1 (`xtensa-espressif_esp32s3_zephyr-elf`), CMake + Ninja, `west` |
 | Servidor web | **Nginx** |

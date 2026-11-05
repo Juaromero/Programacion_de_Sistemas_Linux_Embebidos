@@ -63,7 +63,9 @@ CRC-16 & Vector \texttt{"123456789"} $\rightarrow$ \texttt{0x29B1} en el ESP32-S
 Protocolo del lado Raspberry Pi & 11 comprobaciones automáticas en el host y en la propia Raspberry Pi & Verificado \\
 \texttt{spidev}, servicio, Nginx, API, systemd & Ejecutados en la Raspberry Pi 4 con ventanas sintéticas (modo \texttt{--demo}); mediciones de HTTP, escritura atómica, cadencia de refresco y reinicio & Verificado sin ESP32-S3 \\
 Dashboard en el navegador & \textbf{No verificado}: no se renderizó en un navegador (solo se comprobó que los archivos se sirven) & Pendiente \\
-Enlace SPI con el ESP32-S3 & \textbf{No verificado}: la placa aún no está cableada a la Raspberry Pi & Pendiente \\
+Enlace SPI con el ESP32-S3 & Banco de pruebas en el hardware cableado: 4 velocidades, 5 tiempos de guarda, 4 presets y estabilidad de 5 minutos a 41\,667 Sa/s con 0 errores de CRC. Durante la integración la IA encontró y corrigió tres defectos de su propio código (Documento 2) & Verificado; falta el analizador lógico \\
+Consola UART de la Raspberry Pi & Texto transmitido en ambos sentidos y \emph{login} obtenido desde el PC & Verificado \\
+Diagrama de pines de la placa & La IA interpretó una imagen aportada por el usuario; en una respuesta explicó mal el origen de unas etiquetas del diagrama y lo corrigió después (Documento 6). Las funciones FSPI usadas coinciden con el código de Zephyr & Verificado con el enlace funcionando \\
 Documentos \LaTeX{} & \textbf{No compilados} en el equipo de trabajo (no hay distribución \LaTeX{} instalada) & Pendiente \\
 Cálculos de la estimación SPI & Revisados a mano por la IA; deben ser revisados por el equipo & Pendiente de revisión humana \\
 \bottomrule

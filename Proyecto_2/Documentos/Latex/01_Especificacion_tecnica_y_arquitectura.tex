@@ -14,7 +14,7 @@
 % ============================================================
 \section{Descripción del proyecto}
 
-El sistema es un osciloscopio y capturador de datos híbrido de dos canales analógicos. La adquisición se realiza en un microcontrolador \textbf{ESP32-S3-N16R8} (16 MB de flash, 8 MB de PSRAM), programado con \textbf{Zephyr RTOS 4.5}, que digitaliza ambas señales con el ADC1 de 12 bits, las agrupa en ventanas de 64 muestras por canal y las ofrece por un enlace SPI en el que el ESP32-S3 actúa como esclavo. Una \textbf{Raspberry Pi 4 Model B} (Raspberry Pi OS) es el maestro del bus: un servicio escrito en C lee las ventanas, valida su integridad, conserva la última ventana válida y la publica en un servidor HTTP \textbf{Nginx}, que sirve un dashboard web con gráficas \textbf{uPlot}. Los mismos datos se muestran en el monitor serie del ESP32-S3.
+El sistema es un osciloscopio y capturador de datos híbrido de dos canales analógicos. La adquisición se realiza en una placa \textbf{ESP32-S3-DevKitC-1} con módulo \textbf{ESP32-S3-WROOM-1 N8R2} (8 MB de flash, 2 MB de PSRAM, puente USB-UART CP2102N; datos leídos del chip con \texttt{esptool}), programada con \textbf{Zephyr RTOS 4.5}, que digitaliza ambas señales con el ADC1 de 12 bits, las agrupa en ventanas de 64 muestras por canal y las ofrece por un enlace SPI en el que el ESP32-S3 actúa como esclavo. Una \textbf{Raspberry Pi 4 Model B} (Raspberry Pi OS) es el maestro del bus: un servicio escrito en C lee las ventanas, valida su integridad, conserva la última ventana válida y la publica en un servidor HTTP \textbf{Nginx}, que sirve un dashboard web con gráficas \textbf{uPlot}. Los mismos datos se muestran en el monitor serie del ESP32-S3.
 
 La captura es \emph{por refresco de ventanas}: el ESP32-S3 adquiere ventanas de forma continua e independiente y la Raspberry Pi toma la más reciente; no existe captura bajo demanda. La frecuencia de muestreo se selecciona entre presets preconfigurados en el firmware, intercambiables por SPI: 100, 1\,000 y 10\,000 Sa/s, más un preset de bonificación de 41\,667 Sa/s por canal. El dashboard se actualiza con una tasa entre 0{,}25 Hz (4 s) y 1 Hz (1 s).
 
@@ -36,7 +36,7 @@ La captura es \emph{por refresco de ventanas}: el ESP32-S3 adquiere ventanas de 
 \centering
 \begin{tikzpicture}[node distance=0.85cm]
   \node[bloque] (sig) {Señales analógicas de entrada: CH1 (GPIO1) y CH2 (GPIO2), 0 a 3{,}1 V};
-  \node[bloqueMCU, below=of sig] (mcu) {ESP32-S3-N16R8 (Zephyr)\\ADC1 de 12 bits con DMA, anillo de 3 slots de ventana, esclavo SPI y monitor serie};
+  \node[bloqueMCU, below=of sig] (mcu) {ESP32-S3-DevKitC-1, WROOM-1 N8R2 (Zephyr)\\ADC1 de 12 bits con DMA, anillo de 3 slots de ventana, esclavo SPI y monitor serie};
   \node[bloqueSPI, below=of mcu] (spi) {Bus SPI modo 0\\Raspberry Pi maestro, ESP32-S3 esclavo};
   \node[bloqueSBC, below=of spi] (rpi) {Raspberry Pi 4 Model B (Linux)\\Servicio \texttt{oscd} en C: lectura SPI, validación CRC-16, última ventana};
   \node[bloqueSBC, below=of rpi] (web) {Servidor HTTP Nginx\\Sirve el dashboard, el JSON de la ventana y la API de control};
@@ -57,22 +57,47 @@ La captura es \emph{por refresco de ventanas}: el ESP32-S3 adquiere ventanas de 
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{@{}p{3.2cm} p{3.6cm} p{5.6cm}@{}}
+\begin{tabular}{@{}p{2.6cm} p{2.4cm} p{4.6cm} p{4.4cm}@{}}
 \toprule
-\textbf{Señal} & \textbf{ESP32-S3} & \textbf{Raspberry Pi 4 (pin físico)} \\
+\textbf{Señal} & \textbf{ESP32-S3} & \textbf{Posición en la DevKitC-1} & \textbf{Raspberry Pi 4 (pin físico)} \\
 \midrule
-SCLK & GPIO12 & GPIO11 / SCLK (pin 23) \\
-MOSI & GPIO11 & GPIO10 / MOSI (pin 19) \\
-MISO & GPIO13 & GPIO9 / MISO (pin 21) \\
-CS   & GPIO10 & GPIO8 / CE0 (pin 24) \\
-GND  & GND    & GND (pin 25) \\
+CS   & GPIO10 & Cabecera izquierda, pin 16 & GPIO8 / CE0 (pin 24) \\
+MOSI & GPIO11 & Cabecera izquierda, pin 17 & GPIO10 / MOSI (pin 19) \\
+SCLK & GPIO12 & Cabecera izquierda, pin 18 & GPIO11 / SCLK (pin 23) \\
+MISO & GPIO13 & Cabecera izquierda, pin 19 & GPIO9 / MISO (pin 21) \\
+GND  & GND    & Cabecera izquierda, pin 22 & GND (pin 25) \\
 \midrule
-CH1 (entrada analógica) & GPIO1 (ADC1\_CH0) & --- \\
-CH2 (entrada analógica) & GPIO2 (ADC1\_CH1) & --- \\
+CH1 (entrada) & GPIO1 (ADC1\_CH0) & Cabecera derecha, pin 4 & --- \\
+CH2 (entrada) & GPIO2 (ADC1\_CH1) & Cabecera derecha, pin 5 & --- \\
 \bottomrule
 \end{tabular}
-\caption{Cableado del sistema. GPIO10 a GPIO13 son los pines nativos (IOMUX) del periférico SPI2 del ESP32-S3.}
+\caption{Cableado del sistema. Los pines se cuentan desde arriba con los conectores USB hacia abajo. GPIO10 a GPIO13 son los pines nativos (IOMUX) del periférico SPI2 del ESP32-S3.}
 \end{table}
+
+\paragraph{Advertencia sobre diagramas de pines de terceros.} En el diagrama de pines de la DevKitC-1 usado por el equipo, las etiquetas genéricas «MISO» y «SCK» aparecen en GPIO12 y GPIO13 respectivamente, al revés de las funciones del hardware que el mismo diagrama indica en su columna FSPI (FSPICLK en GPIO12 y FSPIQ en GPIO13). Este documento y el firmware siguen las funciones FSPI: \textbf{SCLK = GPIO12} y \textbf{MISO = GPIO13}.
+
+\paragraph{Pines que no deben usarse.} GPIO0, GPIO3, GPIO45 y GPIO46 son pines de arranque (\emph{strapping}). GPIO43 y GPIO44 son la consola UART0. GPIO19 y GPIO20 son el USB nativo.
+
+\subsection{Acceso de mantenimiento a la Raspberry Pi por UART}
+
+Además de SSH, la Raspberry Pi tiene una consola serie de mantenimiento a través de un adaptador USB-UART CP2102, útil cuando la red no está disponible. Se verificó el 5 de noviembre de 2026: se transmitió texto en ambos sentidos y se obtuvo el \emph{login} de la Raspberry Pi desde el PC.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.6cm} p{6.0cm}@{}}
+\toprule
+\textbf{Adaptador CP2102} & \textbf{Raspberry Pi 4 (pin físico)} \\
+\midrule
+TX  & GPIO15 / RXD (pin 10) \\
+RX  & GPIO14 / TXD (pin 8) \\
+GND & GND (pin 6) \\
+\bottomrule
+\end{tabular}
+\caption{Cableado de la consola UART (115200 8N1, dispositivo \texttt{ttyAMA0}).}
+\end{table}
+
+En la Raspberry Pi están activos \texttt{enable\_uart=1} y \texttt{dtoverlay=disable-bt} (el UART PL011 queda en GPIO14 y GPIO15) y el servicio \texttt{serial-getty@ttyAMA0}, habilitado de forma permanente; se revierte con \texttt{sudo systemctl disable --now serial-getty@ttyAMA0}. En el PC se accede desde WSL (\texttt{usbipd attach} y \texttt{picocom -b 115200 /dev/ttyUSB0}) o desde Windows con PuTTY, lo que requiere instalar el controlador CP210x de Silicon Labs.
 
 Las entradas analógicas se configuran con atenuación de 12 dB (rango útil aproximado de 0{,}1 V a 3{,}1 V). Las señales fuera de 0 a 3{,}3 V requieren acondicionamiento externo para no dañar el ADC.
 
@@ -91,6 +116,7 @@ El controlador digital admite entre 611 y 83\,333 conversiones por segundo (suma
   \item 1\,000, 10\,000 y 41\,667 Sa/s por canal se obtienen con una ráfaga DMA de 64 pares y un intervalo entre conversiones de 500, 50 y 12 $\mu$s.
   \item 100 Sa/s queda por debajo del mínimo de 611 Hz del controlador digital y se genera con un temporizador de tick absoluto (sin deriva) de 10 ms que dispara una lectura de los dos canales.
   \item El máximo teórico es 83\,333/2 $\approx$ 41\,667 Sa/s por canal, que es el preset de bonificación (cumple $\geq$ 40\,000 Sa/s).
+  \item En el chip se midió que la \textbf{primera conversión de cada ráfaga DMA vale 0}. Por eso cada ráfaga adquiere un par adicional al inicio que se descarta (65 pares por ventana; en el preset de 100 Sa/s, dos pares por tick).
 \end{itemize}
 
 \begin{table}[H]

@@ -48,6 +48,10 @@ static const struct adc_dt_spec adc_ch[2] = {
 static atomic_t req_preset = ATOMIC_INIT(0);
 static struct acq_stats stats;
 static uint16_t pairs[OSC_WIN_SAMPLES * OSC_NCH];
+/* La primera conversion de cada rafaga DMA sale en 0 (medido en el ESP32-S3):
+ * se adquiere un par extra al inicio y se descarta. */
+#define ACQ_DISCARD_PAIRS 1
+static uint16_t raw[(OSC_WIN_SAMPLES + ACQ_DISCARD_PAIRS) * OSC_NCH];
 static uint16_t last_pairs[OSC_WIN_SAMPLES * OSC_NCH];
 static uint16_t last_wseq;
 static K_MUTEX_DEFINE(last_lock);
@@ -101,27 +105,34 @@ static int read_dma_window(const struct preset *p)
 {
 	struct adc_sequence_options opt = {
 		.interval_us = p->interval_us,
-		.extra_samplings = OSC_WIN_SAMPLES - 1,
+		.extra_samplings = OSC_WIN_SAMPLES + ACQ_DISCARD_PAIRS - 1,
 	};
 	struct adc_sequence seq = {
 		.options = &opt,
 		.channels = BIT(adc_ch[0].channel_id) | BIT(adc_ch[1].channel_id),
-		.buffer = pairs,
-		.buffer_size = sizeof(pairs),
+		.buffer = raw,
+		.buffer_size = sizeof(raw),
 		.resolution = OSC_ADC_BITS,
 	};
 	uint32_t t0 = k_cycle_get_32();
 	int err = adc_read(adc_ch[0].dev, &seq);
 
 	stats.last_win_us = k_cyc_to_us_floor32(k_cycle_get_32() - t0);
+	memcpy(pairs, &raw[ACQ_DISCARD_PAIRS * OSC_NCH], sizeof(pairs));
 	return err;
 }
 
 static int read_timed_window(const struct preset *p)
 {
+	/* Cada tick: rafaga de 2 pares a la tasa maxima; se usa el segundo par */
+	struct adc_sequence_options opt = {
+		.extra_samplings = ACQ_DISCARD_PAIRS,
+	};
 	struct adc_sequence seq = {
+		.options = &opt,
 		.channels = BIT(adc_ch[0].channel_id) | BIT(adc_ch[1].channel_id),
-		.buffer_size = 2 * sizeof(uint16_t),
+		.buffer = raw,
+		.buffer_size = (ACQ_DISCARD_PAIRS + 1) * OSC_NCH * sizeof(uint16_t),
 		.resolution = OSC_ADC_BITS,
 	};
 	int64_t next = k_uptime_ticks();
@@ -131,12 +142,13 @@ static int read_timed_window(const struct preset *p)
 	for (uint32_t i = 0; i < OSC_WIN_SAMPLES; i++) {
 		next += step;
 		k_sleep(K_TIMEOUT_ABS_TICKS(next));
-		seq.buffer = &pairs[2 * i];
 		int err = adc_read(adc_ch[0].dev, &seq);
 
 		if (err) {
 			return err;
 		}
+		pairs[2 * i] = raw[ACQ_DISCARD_PAIRS * OSC_NCH];
+		pairs[2 * i + 1] = raw[ACQ_DISCARD_PAIRS * OSC_NCH + 1];
 	}
 	stats.last_win_us = k_cyc_to_us_floor32(k_cycle_get_32() - t0);
 	return 0;

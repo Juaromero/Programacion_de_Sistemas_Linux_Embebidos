@@ -33,7 +33,7 @@
 #define VFS_MV 3100.0  /* fondo de escala aprox. con atenuacion 12 dB */
 
 struct stats {
-	uint64_t windows, lost, dup, crc_err, sync_err, io_err, soft_resync, cycles;
+	uint64_t windows, lost, dup, backward, crc_err, sync_err, io_err, soft_resync, cycles;
 	uint64_t seg_n, seg_sum_ns, seg_min_ns, seg_max_ns;
 	uint64_t cyc_sum_ns, cyc_max_ns;
 };
@@ -56,11 +56,17 @@ static int verbose;
 
 static void on_signal(int s) { (void)s; running = 0; }
 
+static uint8_t next_seq(uint8_t s) { return (uint8_t)(s == 255 ? 1 : s + 1); }
+
+/* El numero del comando se asigna solo cuando ya se conoce el CMD_ACK del
+ * esclavo; si se encola antes, se numera al alinearse (ver link_read_window). */
 static void queue_command(uint8_t cmd, uint8_t arg)
 {
-	cmd_seq = (uint8_t)(cmd_seq == 255 ? 1 : cmd_seq + 1);
 	cmd_pending = cmd;
 	cmd_arg = arg;
+	if (cmd_seq_known) {
+		cmd_seq = next_seq(cmd_seq);
+	}
 }
 
 /* ---- Lectura de una ventana completa ---- */
@@ -76,7 +82,7 @@ static int link_read_window(struct osc_window *out)
 	for (unsigned k = 0; k < 3 * OSC_NSEG; k++) {
 		uint64_t dt = 0;
 
-		if (cmd_pending) {
+		if (cmd_pending && cmd_seq_known) {
 			osc_cmd_build(tx, cmd_pending, cmd_arg, cmd_seq);
 		} else {
 			osc_cmd_build(tx, OSC_CMD_NOP, 0, 0);
@@ -101,9 +107,11 @@ static int link_read_window(struct osc_window *out)
 		if (!cmd_seq_known) {          /* alinear cmd_seq con el del esclavo */
 			cmd_seq = s.cmd_ack;
 			cmd_seq_known = 1;
-		}
-		if (cmd_pending && s.cmd_ack == cmd_seq) {
-			cmd_pending = 0;
+			if (cmd_pending) {
+				cmd_seq = next_seq(cmd_seq);   /* numero nuevo: el esclavo lo ejecutara */
+			}
+		} else if (cmd_pending && s.cmd_ack == cmd_seq) {
+			cmd_pending = 0;               /* confirmado por el esclavo */
 		}
 		preset_seen = s.preset;
 		if (s.idx == OSC_SEG_IDLE) {
@@ -117,6 +125,14 @@ static int link_read_window(struct osc_window *out)
 		} else if (expect && s.idx == expect && s.wseq == aw && s.idx < OSC_NSEG) {
 			memcpy(stream + s.idx * OSC_SEG_PAYLOAD, s.payload, OSC_SEG_PAYLOAD);
 			if (++expect == OSC_NSEG) {
+				/* Si nadie leia el bus, el esclavo dejo congelada una ventana
+				 * antigua: la primera tras arrancar se descarta. */
+				static int warmed;
+
+				if (!warmed) {
+					warmed = 1;
+					return 0;
+				}
 				if (have_last && aw == last_wseq) {
 					st.dup++;
 					return 0;
@@ -126,7 +142,18 @@ static int link_read_window(struct osc_window *out)
 					return -1;
 				}
 				if (have_last) {
-					st.lost += (uint16_t)(aw - last_wseq - 1);
+					int16_t d = (int16_t)(aw - last_wseq);
+
+					if (d < 0) {
+						/* ventana mas vieja que la ultima publicada: no publicar */
+						st.backward++;
+						if (verbose) {
+							fprintf(stderr, "ventana hacia atras: ultima=%u recibida=%u\n",
+								last_wseq, aw);
+						}
+						return 0;
+					}
+					st.lost += (uint64_t)(d - 1);
 				}
 				last_wseq = aw;
 				have_last = 1;
@@ -202,12 +229,12 @@ static int build_json(char *buf, size_t sz)
 	double avg_seg = st.seg_n ? (double)st.seg_sum_ns / st.seg_n / 1000.0 : 0;
 
 	n += snprintf(buf + n, sz - n,
-		",\"stats\":{\"windows\":%llu,\"lost\":%llu,\"dup\":%llu,\"crc_err\":%llu,"
+		",\"stats\":{\"windows\":%llu,\"lost\":%llu,\"dup\":%llu,\"backward\":%llu,\"crc_err\":%llu,"
 		"\"sync_err\":%llu,\"io_err\":%llu,\"soft_resync\":%llu,\"spi_hz\":%u,"
 		"\"gap_us\":%u,\"seg_avg_us\":%.1f,\"preset_req\":%d}}\n",
 		(unsigned long long)st.windows, (unsigned long long)st.lost,
-		(unsigned long long)st.dup, (unsigned long long)st.crc_err,
-		(unsigned long long)st.sync_err, (unsigned long long)st.io_err,
+		(unsigned long long)st.dup, (unsigned long long)st.backward,
+		(unsigned long long)st.crc_err, (unsigned long long)st.sync_err, (unsigned long long)st.io_err,
 		(unsigned long long)st.soft_resync, spim.speed_hz, spim.gap_us, avg_seg,
 		preset_req);
 	return n;
@@ -321,7 +348,8 @@ static void bench(unsigned nwin)
 {
 	uint64_t t0 = now_ns();
 	struct osc_window w;
-	unsigned got = 0;
+	unsigned got = 0, win_to_change = 0;
+	uint64_t t_change = 0;
 
 	while (running && got < nwin && (now_ns() - t0) < bench_secs * 1000000000ull) {
 		int r = link_read_window(&w);
@@ -330,6 +358,12 @@ static void bench(unsigned nwin)
 			got++;
 			latest = w;
 			have_latest = 1;
+			if (preset_req >= 0 && !t_change && w.preset == preset_req) {
+				t_change = now_ns() - t0;   /* primera ventana con el preset pedido */
+				win_to_change = got;
+				t0 = now_ns();              /* la tasa se mide ya con el preset nuevo */
+				got = 0;
+			}
 		} else {
 			usleep(500);
 		}
@@ -338,12 +372,20 @@ static void bench(unsigned nwin)
 	double avg = st.seg_n ? (double)st.seg_sum_ns / st.seg_n / 1000.0 : 0;
 	double bits_t = OSC_SEG_LEN * 8.0 / (spim.speed_hz);
 
+	if (preset_req >= 0) {
+		if (t_change) {
+			printf("BENCH cambio a preset %d: %.1f ms, %u ventana(s) recibida(s) hasta ver el preset nuevo\n",
+			       preset_req, t_change / 1e6, win_to_change);
+		} else {
+			printf("BENCH cambio a preset %d: NO observado\n", preset_req);
+		}
+	}
 	printf("BENCH ventanas=%u en %.3f s (%.1f ventanas/s)\n", got, el, got / el);
 	printf("BENCH transacciones=%llu  ioctl_us avg=%.1f min=%.1f max=%.1f  (t_reloj_teorico=%.1f us)\n",
 	       (unsigned long long)st.seg_n, avg, st.seg_min_ns / 1000.0, st.seg_max_ns / 1000.0,
 	       bits_t * 1e6);
-	printf("BENCH lost=%llu dup=%llu crc_err=%llu sync_err=%llu io_err=%llu soft_resync=%llu\n",
-	       (unsigned long long)st.lost, (unsigned long long)st.dup,
+	printf("BENCH lost=%llu dup=%llu backward=%llu crc_err=%llu sync_err=%llu io_err=%llu soft_resync=%llu\n",
+	       (unsigned long long)st.lost, (unsigned long long)st.dup, (unsigned long long)st.backward,
 	       (unsigned long long)st.crc_err, (unsigned long long)st.sync_err,
 	       (unsigned long long)st.io_err, (unsigned long long)st.soft_resync);
 	if (have_latest) {

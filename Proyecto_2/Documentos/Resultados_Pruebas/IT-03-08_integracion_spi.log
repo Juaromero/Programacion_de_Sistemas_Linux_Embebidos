@@ -1,0 +1,82 @@
+Pruebas de integracion ESP32-S3-DevKitC-1 (WROOM-1 N8R2) + Raspberry Pi 4 por SPI
+Fecha: 2026-11-05
+Identificacion del chip (esptool): ESP32-S3 (QFN56) rev v0.2, PSRAM 2MB, flash 8MB, puente CP2102N
+Comando: oscd --bench N --bench-secs S --preset P --speed Hz --gap-us G
+
+### A) preset 3 (41667 Sa/s), gap 150 us, distintas velocidades
+== 1000000 Hz
+BENCH ventanas=1478 en 8.003 s (184.7 ventanas/s)
+BENCH transacciones=8225  ioctl_us avg=809.6 min=588.7 max=1563.8  (t_reloj_teorico=512.0 us)
+BENCH lost=3010 dup=93 crc_err=0 sync_err=337 io_err=0 soft_resync=16
+== 8000000 Hz
+BENCH ventanas=3000 en 5.174 s (579.8 ventanas/s)
+BENCH transacciones=15739  ioctl_us avg=165.1 min=144.1 max=230.1  (t_reloj_teorico=64.0 us)
+BENCH lost=112 dup=32 crc_err=0 sync_err=553 io_err=0 soft_resync=13
+== 15625000 Hz
+BENCH ventanas=3000 en 5.049 s (594.2 ventanas/s)
+BENCH transacciones=18895  ioctl_us avg=91.8 min=72.9 max=207.6  (t_reloj_teorico=32.8 us)
+BENCH lost=37 dup=650 crc_err=0 sync_err=612 io_err=0 soft_resync=15
+== 20000000 Hz
+BENCH ventanas=3000 en 5.121 s (585.9 ventanas/s)
+BENCH transacciones=19932  ioctl_us avg=79.0 min=68.8 max=116.1  (t_reloj_teorico=25.6 us)
+BENCH lost=6 dup=804 crc_err=0 sync_err=883 io_err=0 soft_resync=14
+
+### B) preset 3, 20 MHz, barrido de gap
+== gap 50 us
+BENCH ventanas=3000 en 5.097 s (588.6 ventanas/s)
+BENCH transacciones=32685  ioctl_us avg=50.9 min=39.5 max=116.8  (t_reloj_teorico=25.6 us)
+BENCH lost=8009 dup=3251 crc_err=0 sync_err=1391 io_err=0 soft_resync=20
+== gap 100 us
+BENCH ventanas=3000 en 5.111 s (587.0 ventanas/s)
+BENCH transacciones=23911  ioctl_us avg=73.9 min=65.9 max=146.7  (t_reloj_teorico=25.6 us)
+BENCH lost=32 dup=1569 crc_err=0 sync_err=1037 io_err=0 soft_resync=15
+== gap 150 us
+BENCH ventanas=3000 en 5.089 s (589.5 ventanas/s)
+BENCH transacciones=19963  ioctl_us avg=76.8 min=66.3 max=131.1  (t_reloj_teorico=25.6 us)
+BENCH lost=29 dup=835 crc_err=0 sync_err=760 io_err=0 soft_resync=13
+== gap 250 us
+BENCH ventanas=3000 en 5.413 s (554.2 ventanas/s)
+BENCH transacciones=15452  ioctl_us avg=86.6 min=66.5 max=204.6  (t_reloj_teorico=25.6 us)
+BENCH lost=240 dup=0 crc_err=0 sync_err=424 io_err=0 soft_resync=16
+== gap 400 us
+BENCH ventanas=3000 en 7.854 s (382.0 ventanas/s)
+BENCH transacciones=15644  ioctl_us avg=87.9 min=68.8 max=161.0  (t_reloj_teorico=25.6 us)
+BENCH lost=1689 dup=0 crc_err=0 sync_err=590 io_err=0 soft_resync=31
+(Nota: las corridas A y B se hicieron antes de corregir el defecto de numeracion de comandos;
+ el valor "lost" de gap 50 us puede estar afectado por el defecto de ventana congelada.)
+
+### C) cada preset a 20 MHz, gap 150 us (tras corregir los defectos de oscd)
+== preset 0
+BENCH cambio a preset 0: 648.8 ms, 3 ventana(s) recibida(s) hasta ver el preset nuevo
+BENCH ventanas=6 en 3.840 s (1.6 ventanas/s)
+BENCH lost=0 dup=2939 backward=0 crc_err=0 sync_err=641 io_err=0 soft_resync=19
+== preset 1
+BENCH cambio a preset 1: 660.7 ms, 3 ventana(s) recibida(s) hasta ver el preset nuevo
+BENCH ventanas=60 en 3.987 s (15.0 ventanas/s)
+BENCH lost=0 dup=2758 backward=0 crc_err=0 sync_err=861 io_err=0 soft_resync=24
+== preset 2
+BENCH cambio a preset 2: 28.6 ms, 3 ventana(s) recibida(s) hasta ver el preset nuevo
+BENCH ventanas=600 en 4.105 s (146.1 ventanas/s)
+BENCH lost=3 dup=2035 backward=0 crc_err=0 sync_err=755 io_err=0 soft_resync=16
+== preset 3
+BENCH cambio a preset 3: 11.0 ms, 4 ventana(s) recibida(s) hasta ver el preset nuevo
+BENCH ventanas=3000 en 5.111 s (587.0 ventanas/s)
+BENCH lost=15 dup=829 backward=0 crc_err=0 sync_err=816 io_err=0 soft_resync=23
+
+### API via Nginx (servicio oscd a 20 MHz / 150 us)
+POST /api/preset?id=2 -> {"ok":true,"preset_req":2}; window.json: preset 2, fs 10000, crc 0
+POST /api/preset?id=3 -> {"ok":true,"preset_req":3}; window.json: preset 3, fs 41667, crc 0
+
+### IT-07: 5 minutos a 41667 Sa/s, refresco 1 Hz
+duracion=332s  lecturas del dashboard ok=300 fallidas=0
+incrementos: {'windows': 194668, 'lost': 783, 'dup': 65808, 'backward': 0, 'crc_err': 0, 'sync_err': 54274, 'io_err': 0, 'soft_resync': 921}
+ventanas/s recibidas=586.3  fraccion leida=0.9960
+oscd: active, reinicios: 0
+
+### Verificacion de la correccion de "ventana congelada"
+Servicio detenido 20 s y reiniciado con el oscd corregido:
+seq 65 preset 0 fs 100 | win 6 lost 0 crc 0 back 0
+seq 1508 preset 3 fs 41667 | win 1449 lost 0 crc 0 back 0
+
+### Monitor serie del ESP32-S3 durante la integracion
+STAT preset=0 fs=100 Sa/s ventanas=9 err_adc=0 t_adc_read=640067 us spi_tx=10555 spi_parcial=0 cmd_ok=10554 cmd_bad=0 resync=0 crc_test=0x29b1

@@ -85,22 +85,22 @@ La columna de estado se completa durante la ejecución de cada prueba. Los valor
 UT-MCU-01 & ESP32-S3 & Duración de la ventana y $f_s$ efectiva por preset & 100; 1\,000; 10\,000; 41\,667 & $f_s$ real dentro de $\pm 1\,\%$ (con señal de frecuencia conocida) & $T_w = 64/f_s$ & Parcial \\
 UT-MCU-02 & ESP32-S3 & Conversión del ADC en CH1 y CH2 y orden de canales & 1\,000 & Ganancia y offset dentro de la tolerancia del ADC; CH1 y CH2 no intercambiados & Ajuste lineal 0 a 4095 & Pendiente \\
 UT-MCU-03 & ESP32-S3 & Llenado de 64 pares por ventana & 100; 1\,000; 10\,000; 41\,667 & 64 muestras por canal por ventana, sin errores del ADC & 64 pares & Aprobada \\
-UT-MCU-04 & ESP32-S3 & Anillo de 3 slots bajo lectura SPI & 41\,667 & Ninguna ventana alterada durante su entrega & Cero ventanas corruptas & Pendiente \\
-UT-MCU-05 & ESP32-S3 & Segmento SPI (cabecera, datos y CRC) & 1\,000 & CRC válido en 100\,\% de los segmentos & 64 bytes por segmento & Parcial \\
-UT-MCU-06 & ESP32-S3 & Ejecución de comando de preset & 100 a 41\,667 & Cambio de frecuencia en $\leq$ 1 ventana & Cambio en $\leq$ 1 $T_w$ & Parcial \\
+UT-MCU-04 & ESP32-S3 & Anillo de 3 slots bajo lectura SPI & 41\,667 & Ninguna ventana alterada durante su entrega & Cero ventanas corruptas & Aprobada \\
+UT-MCU-05 & ESP32-S3 & Segmento SPI (cabecera, datos y CRC) & 1\,000 & CRC válido en 100\,\% de los segmentos & 64 bytes por segmento & Aprobada \\
+UT-MCU-06 & ESP32-S3 & Ejecución de comando de preset & 100 a 41\,667 & Cambio de frecuencia en $\leq$ 1 ventana & Cambio en $\leq$ 1 $T_w$ & Aprobada \\
 UT-SBC-01 & Raspberry Pi & Configuración de \texttt{spidev} & 1\,000 & Modo 0, velocidad y 8 bits confirmados & Parámetros aplicados & Aprobada \\
-UT-SBC-02 & Raspberry Pi & Validación de CRC y descarte & 10\,000 & Tramas corruptas descartadas y reintentadas & 0 tramas corruptas aceptadas & Parcial \\
+UT-SBC-02 & Raspberry Pi & Validación de CRC y descarte & 10\,000 & Tramas corruptas descartadas y reintentadas & 0 tramas corruptas aceptadas & Aprobada \\
 UT-SBC-03 & Raspberry Pi & Escritura atómica del archivo de ventana & 1\,000 & Lectura nunca parcial desde el servidor & Archivo consistente & Aprobada \\
 UT-SBC-04 & Servidor HTTP & Entrega del JSON de la última ventana & 1\,000 & HTTP 200 y JSON válido & Respuesta en $\leq$ 100 ms & Aprobada \\
 UT-SBC-05 & Servicio systemd & Reinicio automático del servicio & --- & Servicio activo tras fallo simulado & Reinicio en $\leq$ 5 s & Aprobada \\
 IT-01 & Sistema & Refresco del dashboard a 0{,}25 Hz & 1\,000 & Actualización cada 4 s $\pm$ 0{,}2 s & $T_r = 4$ s & Parcial \\
 IT-02 & Sistema & Refresco del dashboard a 1 Hz & 1\,000 & Actualización cada 1 s $\pm$ 0{,}1 s & $T_r = 1$ s & Parcial \\
-IT-03 & Enlace SPI & Transferencia de ventana a 100 Sa/s & 100 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}02\,\%$ (20 MHz) & Pendiente \\
-IT-04 & Enlace SPI & Transferencia de ventana a 1\,000 Sa/s & 1\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}20\,\%$ (20 MHz) & Pendiente \\
-IT-05 & Enlace SPI & Transferencia de ventana a 10\,000 Sa/s & 10\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 2{,}0\,\%$ (20 MHz) & Pendiente \\
-IT-06 & Enlace SPI & Transferencia de ventana a 41\,667 Sa/s & 41\,667 & $t_{tx}$ medido $\approx$ teórico y $D < 15\,\%$ & $D = 8{,}3\,\%$ (20 MHz) & Pendiente \\
-IT-07 & Sistema & Preset de bonificación de extremo a extremo & 41\,667 & Dashboard muestra la señal durante 5 min sin errores de CRC; huecos de WSEQ medidos y documentados & $f_s \geq$ 40\,000 & Pendiente \\
-IT-08 & Sistema & Cambio de preset desde el dashboard & 100 a 41\,667 & La ventana siguiente al comando usa el nuevo preset en $\leq$ 2 ventanas + 1 refresco & Cambio en $\leq$ 2 $T_w$ & Pendiente \\
+IT-03 & Enlace SPI & Transferencia de ventana a 100 Sa/s & 100 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}02\,\%$ (20 MHz) & Parcial \\
+IT-04 & Enlace SPI & Transferencia de ventana a 1\,000 Sa/s & 1\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 0{,}20\,\%$ (20 MHz) & Parcial \\
+IT-05 & Enlace SPI & Transferencia de ventana a 10\,000 Sa/s & 10\,000 & $t_{tx}$ medido $\approx$ teórico y 0 errores de CRC & $D = 2{,}0\,\%$ (20 MHz) & Parcial \\
+IT-06 & Enlace SPI & Transferencia de ventana a 41\,667 Sa/s & 41\,667 & $t_{tx}$ medido $\approx$ teórico y $D < 15\,\%$ & $D = 8{,}3\,\%$ (20 MHz) & Parcial \\
+IT-07 & Sistema & Preset de bonificación de extremo a extremo & 41\,667 & Dashboard muestra la señal durante 5 min sin errores de CRC; huecos de WSEQ medidos y documentados & $f_s \geq$ 40\,000 & Aprobada \\
+IT-08 & Sistema & Cambio de preset desde el dashboard & 100 a 41\,667 & La ventana siguiente al comando usa el nuevo preset en $\leq$ 2 ventanas + 1 refresco & Cambio en $\leq$ 2 $T_w$ & Parcial \\
 \bottomrule
 \end{tabular}
 \caption{Matriz de verificación del sistema.}
@@ -273,8 +273,86 @@ Tiempo del \texttt{ioctl} de una transacción de 64 bytes (sin ESP32-S3, MISO fl
 
 El \texttt{ioctl} añade entre 13 y 78 $\mu$s sobre el tiempo ideal de bits. Con cinco transacciones por ventana y 150 $\mu$s de guarda, un ciclo de lectura cuesta aproximadamente 1{,}0 ms a 20 MHz y 1{,}2 ms a 8 MHz, frente a una ventana nueva cada $\approx$ 1{,}6 ms en el preset de 41\,667 Sa/s: el margen existe pero es estrecho y la guarda mínima estable debe determinarse con el ESP32-S3 conectado.
 
+\subsection{Integración ESP32-S3 + Raspberry Pi 4 (5 de noviembre de 2026)}
+
+Montaje: ESP32-S3-DevKitC-1 (WROOM-1 N8R2) cableado a la Raspberry Pi 4 según el Documento 1, cables cortos y GND común. Medición con \texttt{oscd --bench}, que cuenta ventanas recibidas, ventanas no leídas (saltos de WSEQ), duplicadas, errores de CRC y de sincronía. Evidencia: \texttt{IT-03-08\_integracion\_spi.log}.
+
+\paragraph{Velocidad del reloj SPI} (preset de 41\,667 Sa/s, guarda de 150 $\mu$s, 3\,000 ventanas o 8 s):
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{2.6cm} p{2.4cm} p{2.6cm} p{2.2cm} p{2.0cm} p{2.2cm}@{}}
+\toprule
+\textbf{Reloj solicitado} & \textbf{Ventanas/s} & \textbf{\texttt{ioctl} medio} & \textbf{No leídas} & \textbf{Errores CRC} & \textbf{Errores sync} \\
+\midrule
+1 MHz        & 184{,}7 & 809{,}6 $\mu$s & 3\,010 & 0 & 337 \\
+8 MHz        & 579{,}8 & 165{,}1 $\mu$s & 112    & 0 & 553 \\
+15{,}625 MHz & 594{,}2 & 91{,}8 $\mu$s  & 37     & 0 & 612 \\
+20 MHz       & 585{,}9 & 79{,}0 $\mu$s  & 6      & 0 & 883 \\
+\bottomrule
+\end{tabular}
+\caption{Desempeño del enlace según el reloj solicitado.}
+\end{table}
+
+\paragraph{Tiempo de guarda} (20 MHz, preset de 41\,667 Sa/s): con 50 $\mu$s el esclavo no alcanza a rearmarse y se pierden muchas ventanas; con 100 y 150 $\mu$s se reciben 587 a 590 ventanas/s con menos de 1{,}1\,\% no leídas; con 250 $\mu$s baja a 554 ventanas/s y con 400 $\mu$s a 382 ventanas/s. Se adoptó \textbf{20 MHz y 150 $\mu$s} como configuración del servicio. Las corridas de velocidad y de guarda se hicieron antes de corregir los defectos de la Sección~\ref{sec:defectos}, por lo que algunos conteos de ventanas no leídas (en especial el de 50 $\mu$s) pueden estar inflados; los errores de CRC no se ven afectados.
+
+\paragraph{Presets} (20 MHz, 150 $\mu$s; el cambio se ordena por SPI al inicio de cada corrida):
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{2.4cm} p{2.6cm} p{2.6cm} p{3.4cm} p{2.6cm}@{}}
+\toprule
+\textbf{Preset} & \textbf{Ventanas/s recibidas} & \textbf{Ventanas/s esperadas} & \textbf{Tiempo hasta ver el preset nuevo} & \textbf{Errores CRC} \\
+\midrule
+100 Sa/s      & 1{,}6   & 1{,}56 & 649 ms & 0 \\
+1\,000 Sa/s   & 15{,}0  & 15{,}5 & 661 ms & 0 \\
+10\,000 Sa/s  & 146{,}1 & 154    & 29 ms  & 0 \\
+41\,667 Sa/s  & 587{,}0 & 621    & 11 ms  & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Desempeño por preset. Las ventanas/s esperadas son $1/T_w$ con la duración medida en UT-MCU-01 (incluye el arranque de la ráfaga); entre ráfagas el firmware añade además el tiempo de publicar la ventana, por lo que a 41\,667 Sa/s el ESP32-S3 produce en la práctica $\approx$ 595 ventanas/s.}
+\end{table}
+
+El tiempo de cambio incluye terminar la ventana en curso del preset anterior: al pasar de 100 Sa/s a 1\,000 Sa/s debe terminar una ventana de 640 ms, de ahí los 661 ms. En todos los casos el cambio ocurre en la ventana siguiente a la que estaba en curso (UT-MCU-06).
+
+\paragraph{IT-07: estabilidad de 5 minutos a 41\,667 Sa/s} con el servicio \texttt{oscd} (20 MHz, 150 $\mu$s) y lectura de \texttt{window.json} por Nginx cada segundo:
+
+\begin{itemize}
+  \item Duración: 332 s; 194\,668 ventanas recibidas (586{,}3 ventanas/s).
+  \item \textbf{Errores de CRC: 0}; ventanas hacia atrás: 0; errores de E/S: 0; reinicios del servicio: 0.
+  \item Fracción de ventanas producidas que se leyeron: \textbf{99{,}6\,\%} (783 no leídas).
+  \item Lecturas HTTP del JSON: 300 de 300 correctas, todas con preset 3 y 64 muestras por canal.
+  \item Errores de sincronía: 54\,274 (segmentos clocados cuando el esclavo aún no estaba rearmado); se descartan sin consecuencias y se recupera en el siguiente segmento 0.
+\end{itemize}
+
+\paragraph{IT-03 a IT-06 (parciales).} El enlace transfiere ventanas en los cuatro presets con 0 errores de CRC. El tiempo medio del \texttt{ioctl} a 20 MHz es de $\approx$ 79 $\mu$s por segmento ($\approx$ 395 $\mu$s por ventana), que incluye la sobrecarga del kernel. Falta medir con analizador lógico la frecuencia real del reloj y $t_{tx}$ de los bits, para comparar con el valor teórico $2\,560/f_{SPI} = 128\ \mu$s.
+
+\paragraph{IT-08 (parcial).} El cambio de preset a través de la API publicada por Nginx (\texttt{POST /api/preset}, la misma llamada que usan los botones del dashboard) se reflejó en \texttt{window.json} en menos de 2 s. Falta comprobarlo pulsando los botones en un navegador.
+
+\subsection{Defectos encontrados y corregidos durante la integración}
+\label{sec:defectos}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.6cm} p{5.6cm} p{5.6cm}@{}}
+\toprule
+\textbf{Defecto} & \textbf{Causa} & \textbf{Corrección} \\
+\midrule
+El preset no cambiaba al iniciar \texttt{oscd} & El número del comando se asignaba antes de conocer el \texttt{CMD\_ACK} del esclavo; si coincidía con un comando ya ejecutado, el ESP32-S3 lo ignoraba y la Raspberry Pi lo daba por confirmado & El número se asigna después de alinearse con \texttt{CMD\_ACK} y nunca se envía antes \\
+CH1 siempre en 0 a 100 Sa/s y primera muestra de CH1 en 0 en las ráfagas & La primera conversión de cada ráfaga DMA del ADC vale 0 & Se adquiere un par adicional al inicio de cada ráfaga y se descarta \\
+Salto falso de miles de ventanas «no leídas» al arrancar el servicio & Sin lecturas, el esclavo deja congelada la ventana de ese momento, que puede tener decenas de segundos & Se descarta la primera ventana tras arrancar; los saltos hacia atrás se cuentan aparte y no se publican \\
+\bottomrule
+\end{tabular}
+\caption{Defectos de integración.}
+\end{table}
+
+Tras las correcciones, un reinicio del servicio después de 20 s sin lecturas dio 0 ventanas no leídas.
+
 \subsection{Hallazgo abierto sobre las entradas}
 
-Durante UT-MCU-01, con las entradas sin señal conectada, CH1 (GPIO1) leyó constantemente 0 y CH2 (GPIO2) mostró un patrón periódico compatible con acoplamiento de red eléctrica (armónico de 120 Hz muestreado a 100 Sa/s, alias de 20 Hz). Esto debe resolverse en UT-MCU-02 conectando GND, 3{,}3 V y un divisor a cada canal: comprobar que CH1 no está a tierra y que el orden CH1/CH2 de la ráfaga DMA es el esperado.
+Con las entradas sin una señal conocida, ambos canales muestran a 100 Sa/s un patrón periódico de 5 muestras entre 0 y 4095, compatible con entradas flotantes que captan la red eléctrica (alias de 20 Hz de un armónico de 120 Hz). UT-MCU-02 sigue pendiente: conectar GND, 3{,}3 V y un divisor a cada canal, con una tensión distinta en cada uno para confirmar el orden CH1/CH2.
 
 \end{document}

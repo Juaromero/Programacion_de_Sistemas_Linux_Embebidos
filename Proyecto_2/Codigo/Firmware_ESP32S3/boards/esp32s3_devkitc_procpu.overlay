@@ -1,8 +1,9 @@
 /*
  * Osciloscopio: ADC1 (GPIO1 = CH1, GPIO2 = CH2) con DMA, SPI2 como esclavo
  * (GPIO10 CS, GPIO11 MOSI, GPIO12 SCLK, GPIO13 MISO: pines IOMUX nativos de
- * FSPI). La consola es UART0 (puerto "UART" de la DevKitC, puente CH343,
- * 115200 8N1), que es el predeterminado de la placa. Para usar el puerto USB
+ * FSPI). Placa: ESP32-S3-DevKitC-1 (WROOM-1 N8R2). La consola es UART0
+ * (micro-USB "UART" de la placa, puente CP2102N, 115200 8N1), que es el
+ * predeterminado de la placa. Para usar el puerto USB
  * nativo agregar boards/usb_console.overlay (ver README).
  */
 

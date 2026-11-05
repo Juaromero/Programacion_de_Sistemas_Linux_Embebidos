@@ -1,11 +1,12 @@
 # Proyecto 2 — Sistema híbrido de adquisición analógica por SPI y dashboard embebido (Osciloscopio)
 
-Osciloscopio de **2 canales**: un **ESP32-S3-N16R8** (Zephyr) digitaliza dos señales con su ADC de 12 bits y las entrega por **SPI** (esclavo) a una **Raspberry Pi 4 Model B** (maestro), que las publica en un **dashboard web** servido por **Nginx**. Las ventanas también se ven en el monitor serie del ESP32-S3.
+Osciloscopio de **2 canales**: una **ESP32-S3-DevKitC-1** (módulo WROOM-1 N8R2, Zephyr) digitaliza dos señales con su ADC de 12 bits y las entrega por **SPI** (esclavo) a una **Raspberry Pi 4 Model B** (maestro), que las publica en un **dashboard web** servido por **Nginx**. Las ventanas también se ven en el monitor serie del ESP32-S3.
 
 * Ventanas de **64 muestras por canal**, frecuencia de muestreo constante dentro de cada ventana.
 * Presets de muestreo intercambiables por SPI: **100, 1 000, 10 000 y 41 667 Sa/s** (este último cumple la bonificación ≥ 40 kSa/s).
 * Captura por **refresco de ventanas**: el ESP32-S3 adquiere de forma continua; la Raspberry Pi toma la más reciente.
 * Refresco del dashboard configurable entre **0,25 Hz** (4 s) y **1 Hz**.
+* Enlace verificado a **20 MHz**: ~586 ventanas/s a 41 667 Sa/s, **0 errores de CRC** en 5 minutos.
 
 ## Estructura
 
@@ -23,96 +24,112 @@ Proyecto_2/
 │       ├── tests/            test_protocol.c (sin hardware)
 │       ├── Makefile, install.sh
 ├── Documentos/
-│   ├── Latex/                  6 documentos LaTeX + preámbulo y portada compartidos + Makefile
-│   ├── PDF/                    PDF generados (make en Latex/)
-│   ├── IA/                     exportar_chats.ps1 (transcripciones crudas, fuera de Git)
-│   └── Resultados_Pruebas/     Evidencias (logs, capturas)
+│   ├── Latex/                6 documentos LaTeX + preámbulo y portada compartidos + Makefile
+│   ├── PDF/                  PDF generados (make en Latex/)
+│   ├── IA/                   exportar_chats.ps1 (transcripciones crudas, fuera de Git)
+│   └── Resultados_Pruebas/   Evidencias (logs)
 └── Imagenes/
 ```
 
-## Conexiones
+## Conexiones ESP32-S3-DevKitC-1 ↔ Raspberry Pi 4
 
-| Señal | ESP32-S3 | Raspberry Pi 4 (pin físico) |
-|---|---|---|
-| SCLK | GPIO12 | GPIO11 / SCLK (23) |
-| MOSI | GPIO11 | GPIO10 / MOSI (19) |
-| MISO | GPIO13 | GPIO9 / MISO (21) |
-| CS | GPIO10 | GPIO8 / CE0 (24) |
-| GND | GND | GND (25) |
-| **CH1** (entrada) | **GPIO1** (ADC1_CH0) | — |
-| **CH2** (entrada) | **GPIO2** (ADC1_CH1) | — |
+Pines contados desde arriba, con los conectores USB de la DevKitC-1 hacia abajo.
 
-Entradas analógicas: **0 a 3,1 V** (atenuación 12 dB). No superar 3,3 V. Cables SPI cortos y GND común.
+| Señal | ESP32-S3 | Posición en la DevKitC-1 | Raspberry Pi 4 (pin físico) |
+|---|---|---|---|
+| CS | GPIO10 | izquierda, pin 16 | GPIO8 / CE0 (24) |
+| MOSI | GPIO11 | izquierda, pin 17 | GPIO10 / MOSI (19) |
+| SCLK | GPIO12 | izquierda, pin 18 | GPIO11 / SCLK (23) |
+| MISO | GPIO13 | izquierda, pin 19 | GPIO9 / MISO (21) |
+| GND | GND | izquierda, pin 22 | GND (25) |
+| **CH1** (entrada) | **GPIO1** (ADC1_CH0) | derecha, pin 4 | — |
+| **CH2** (entrada) | **GPIO2** (ADC1_CH1) | derecha, pin 5 | — |
+
+> En algunos diagramas de pines de la DevKitC-1 las etiquetas genéricas «MISO» y «SCK» están en GPIO12 y GPIO13, al revés del hardware. Lo correcto, según las funciones FSPI, es **SCLK = GPIO12** y **MISO = GPIO13**.
+
+Entradas analógicas: **0 a 3,1 V** (atenuación 12 dB). No superar 3,3 V. Cables SPI cortos y GND común. No conectar entre placas los pines 5V ni 3V3.
 
 ## 1. Firmware del ESP32-S3 (WSL + Zephyr)
 
 Requisitos: Zephyr 4.5 con su SDK 1.0.1 y `west` (entorno virtual del workspace).
 
-```bash
-source ~/zephyrproject/.venv/bin/activate
-cd ~/zephyrproject
-west build -p auto -b esp32s3_devkitc/esp32s3/procpu \
-    /ruta/al/repo/Proyecto_2/Codigo/Firmware_ESP32S3 -d ~/build/osc
-west flash -d ~/build/osc --esp-device /dev/ttyACM1
-```
+1. Pasar el puente USB de la placa (CP2102N) a WSL desde PowerShell. `bind` se hace una sola vez y requiere administrador:
+   ```
+   usbipd list
+   usbipd bind --busid <BUSID>
+   usbipd attach --wsl --busid <BUSID>
+   ```
+2. Compilar y cargar desde WSL:
+   ```bash
+   source ~/zephyrproject/.venv/bin/activate
+   cd ~/zephyrproject
+   west build -p auto -b esp32s3_devkitc/esp32s3/procpu \
+       /ruta/al/repo/Proyecto_2/Codigo/Firmware_ESP32S3 -d ~/build/osc
+   west flash -d ~/build/osc --esp-device /dev/ttyUSB1
+   ```
+   Si hay varios adaptadores, el ESP32-S3 se identifica con `udevadm info -q property -n /dev/ttyUSBx | grep ID_MODEL` (`CP2102N`) o con `esptool --port /dev/ttyUSBx chip-id`.
+3. **Monitor serie:** `picocom -b 115200 /dev/ttyUSB1`. Cada segundo imprime una línea `STAT` y las líneas `WIN … CH1/CH2` con la última ventana. Las teclas **0, 1, 2, 3** cambian el preset.
 
-* La consola es **UART0** (puerto «UART» de la DevKitC, puente CH343) a **115200 8N1**. Para usar el puerto USB nativo: añadir `-- -DEXTRA_DTC_OVERLAY_FILE=boards/usb_console.overlay`.
-* **WSL y USB:** el CH343 debe estar *adjunto* a WSL desde Windows: `usbipd list` y `usbipd attach --wsl --busid <BUSID>` (el nodo puede ser `/dev/ttyACM0` o `ACM1`; un nodo huérfano de una sesión anterior hace que `esptool` se cuelgue).
-* **Monitor serie:** `stty -F /dev/ttyACM1 115200 raw -echo; cat /dev/ttyACM1`. Cada segundo imprime una línea `STAT` y las líneas `WIN … CH1/CH2` con la última ventana. Las teclas **0, 1, 2, 3** cambian el preset sin necesidad de la Raspberry Pi.
+La consola es **UART0** (micro-USB «UART» de la placa) a **115200 8N1**. Para usar el puerto USB nativo: `-- -DEXTRA_DTC_OVERLAY_FILE=boards/usb_console.overlay`.
 
 ## 2. Software de la Raspberry Pi 4
-
-Requisitos: Raspberry Pi OS, SSH, SPI0 habilitado.
 
 ```bash
 cd Proyecto_2/Codigo/Software_RPi
 sudo ./install.sh            # paquetes, SPI, nginx, compilación, pruebas, systemd
-sudo reboot                  # si SPI/core_freq acaban de habilitarse
-sudo systemctl start oscd
+sudo reboot                  # si SPI acaba de habilitarse
+sudo systemctl start oscd    # 20 MHz, guarda de 150 us (config/oscd.service)
 ```
 
 Abrir `http://<ip-de-la-raspberry>/`. Comandos útiles:
 
 ```bash
-make test                                        # pruebas unitarias del protocolo (sin hardware)
-sudo ./oscd --bench 1000 --speed 8000000 --gap-us 150     # banco de pruebas SPI
-sudo ./oscd --bench 1000 --preset 3 --speed 15625000       # preset de bonificación
-curl -X POST 'http://localhost/api/preset?id=2'            # cambiar preset
-curl -X POST 'http://localhost/api/refresh?hz=0.25'        # cambiar refresco
-curl http://localhost/data/window.json                     # última ventana
-journalctl -u oscd -f                                      # registro del servicio
+make test                                                   # pruebas del protocolo (sin hardware)
+sudo systemctl stop oscd                                    # liberar el bus antes del banco de pruebas
+sudo ./oscd --bench 3000 --preset 3 --speed 20000000 --gap-us 150   # banco de pruebas SPI
+curl -X POST 'http://localhost/api/preset?id=2'             # cambiar preset
+curl -X POST 'http://localhost/api/refresh?hz=0.25'         # cambiar refresco
+curl http://localhost/data/window.json                      # última ventana
+journalctl -u oscd -f                                       # registro del servicio
 ```
 
 Parámetros de `oscd`: `--dev`, `--speed` (Hz), `--gap-us` (guarda entre transacciones), `--out`, `--port`, `--refresh` (0,25 a 1), `--preset`, `--bench N`, `--bench-secs S`, `--demo`, `--rt`, `-v`.
 
-## 3. Puesta en marcha recomendada
+**Modo demo (sin ESP32-S3):** `sudo ./oscd --demo --out /run/osciloscopio/window.json --port 8081` genera ventanas sintéticas con el mismo formato.
 
-1. Firmware solo, con monitor serie (tecla 0–3). Comprobar `err_adc=0` y `crc_test=0x29b1`.
-2. Calibrar el ADC con GND, 3,3 V y un divisor (ver Documento 2).
-3. Conectar el SPI; arrancar con `--speed 1000000` y subir hasta la velocidad estable; ajustar `--gap-us`.
-4. Editar `config/oscd.service` con los valores estables y arrancar el servicio.
+## 3. Acceso a la Raspberry Pi por UART (USB-UART CP2102)
 
-## Probar la Raspberry Pi sin el ESP32-S3 (modo demo)
+Consola de mantenimiento, verificada en ambos sentidos con *login* desde el PC.
 
-```bash
-sudo ./oscd --demo --out /run/osciloscopio/window.json --port 8081   # ventanas sintéticas
+| CP2102 | Raspberry Pi 4 (pin físico) |
+|---|---|
+| TX | GPIO15 / RXD (10) |
+| RX | GPIO14 / TXD (8) |
+| GND | GND (6) |
+
+En la Raspberry Pi: `enable_uart=1`, `dtoverlay=disable-bt` y `serial-getty@ttyAMA0` habilitado (se revierte con `sudo systemctl disable --now serial-getty@ttyAMA0`).
+
+Desde el PC (WSL):
 ```
-
-Genera ventanas con el mismo formato (senoides) y responde a `/api/preset` y `/api/refresh`; sirve para probar Nginx, el dashboard y el servicio sin el enlace SPI.
+usbipd attach --wsl --busid <BUSID del CP2102>      # PowerShell
+picocom -b 115200 /dev/ttyUSB0                      # WSL; Enter -> "login:"; salir: Ctrl+A, Ctrl+X
+usbipd detach --busid <BUSID>                       # devolver el adaptador a Windows
+```
+Desde Windows con PuTTY hace falta instalar el driver CP210x de Silicon Labs. Si aparece «Device or resource busy», hay otra terminal (por ejemplo `screen`) abierta sobre el puerto: `screen -r` o `screen -X -S <id> quit`.
 
 ## Estado
 
 | Elemento | Estado |
 |---|---|
-| Firmware compila y se ejecuta en el ESP32-S3 (4 presets, ADC con DMA, monitor serie) | Verificado en hardware |
-| Duración de ventana por preset (incl. 41 667 Sa/s) | Medido (Documento 2) |
-| CRC-16 compatible ESP32-S3 ↔ Raspberry Pi | Verificado (`0x29B1`) |
-| `oscd` compila y pasa `make test` en la Raspberry Pi 4 | Verificado |
-| `spidev0.0` (modo 0, 8 bits) y latencia del `ioctl` | Medido |
-| Nginx + API + JSON atómico + refresco + reinicio systemd (modo demo) | Verificado en la Raspberry Pi |
+| Firmware en la ESP32-S3-DevKitC-1 (4 presets, ADC con DMA, monitor serie) | Verificado en hardware |
+| Enlace SPI ESP32-S3 ↔ Raspberry Pi a 20 MHz, 4 presets, cambio de preset por SPI | Verificado (0 errores de CRC) |
+| Estabilidad de 5 min a 41 667 Sa/s (IT-07) | Aprobada |
+| Nginx + API + JSON atómico + refresco + reinicio systemd | Verificado en la Raspberry Pi |
+| Consola UART de la Raspberry Pi | Verificada |
+| Calibración del ADC con señales conocidas (UT-MCU-02) | **Pendiente** |
+| Reloj SPI real con analizador lógico (IT-03 a IT-06) | **Pendiente** |
 | Dashboard renderizado en un navegador | **Pendiente** |
-| Enlace SPI ESP32-S3 ↔ Raspberry Pi y pruebas de integración | **Pendiente** (placas sin cablear) |
-| Los `.tex` | Reorganizados; revisión estática OK, **sin compilar** (sin LaTeX en el equipo) |
+| Los `.tex` | Revisión estática OK, **sin compilar** (sin LaTeX en el equipo) |
 
 ## Documentación
 
