@@ -33,6 +33,10 @@ Proyecto_2/
 
 ## Conexiones ESP32-S3-DevKitC-1 ↔ Raspberry Pi 4
 
+![Circuito del proyecto: Raspberry Pi 4, ESP32-S3 por SPI y adaptador CP2102 para la consola UART](Imagenes/Circuito.png)
+
+*Circuito del sistema (Fritzing). Enlace SPI entre la Raspberry Pi y el ESP32-S3 y adaptador CP2102 para la consola UART de la Raspberry Pi. La pieza de Fritzing es representativa: la placa real es una ESP32-S3-DevKitC-1 con módulo WROOM-1 N8R2. Las entradas CH1 (GPIO1) y CH2 (GPIO2) no aparecen en el dibujo. El GND de la Raspberry Pi puede ir a cualquiera de sus pines GND.*
+
 Pines contados desde arriba, con los conectores USB de la DevKitC-1 hacia abajo.
 
 | Señal | ESP32-S3 | Posición en la DevKitC-1 | Raspberry Pi 4 (pin físico) |
