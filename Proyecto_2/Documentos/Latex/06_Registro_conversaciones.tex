@@ -220,4 +220,16 @@ Listo ya me conecte, agrega que nos pudimos conectar por usb a uart a la raspber
 \caption{Acciones del turno 13.}
 \end{table}
 
+\subsection{Turnos 14 y 15 (5 de noviembre de 2026): entradas flotantes y pruebas manuales}
+
+\paragraph{Usuario (literal).}
+\begin{quote}
+¿Porque me esta generando valores si yo no tengo nada conectado en los dos canales?
+\end{quote}
+\begin{quote}
+Ok, quiero que aparte de tu la IA, quiero que una persona realice unas pruebas de funcionamiento del osculoscopio, dame formas de probarlo y ademas quiero que me guies paso a paso los comandos que se necesitan para inciar nuestro programa, desde las coenxiones hasta la pagina web
+\end{quote}
+
+\paragraph{Respuestas del asistente (resumen fiel).} Explicó que una entrada sin conectar flota y capta ruido (acoplamiento de la red eléctrica y carga residual del condensador de muestreo compartido), y propuso comprobarlo conectando GND y 3V3. Después verificó en la Raspberry Pi que \texttt{gpioset} (libgpiod 2.2.1) puede generar una onda cuadrada de prueba; al diseñar la prueba de recuperación detectó y corrigió un defecto del servicio ante el reinicio del ESP32-S3 (Documento 2), y escribió el Documento 7 con la puesta en marcha paso a paso, 13 pruebas manuales y una hoja de registro.
+
 \end{document}

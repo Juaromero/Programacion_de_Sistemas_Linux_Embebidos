@@ -351,6 +351,8 @@ Salto falso de miles de ventanas «no leídas» al arrancar el servicio & Sin le
 
 Tras las correcciones, un reinicio del servicio después de 20 s sin lecturas dio 0 ventanas no leídas.
 
+Un cuarto defecto se encontró al preparar las pruebas manuales (Documento 7): si el ESP32-S3 se reinicia, su contador WSEQ vuelve a 0 y el servicio podía tomar las ventanas nuevas como «hacia atrás» y dejar de publicarlas. Ahora un salto hacia atrás de 16 o más ventanas se interpreta como reinicio del ESP32-S3: se acepta y se reenvía el preset elegido. Prueba: con el preset de 10\,000 Sa/s se reinició el ESP32-S3 por su línea de \emph{reset}; el servicio registró «ESP32 reiniciado (WSEQ 9028 $\rightarrow$ 0)», el ESP32-S3 volvió con el preset de 10\,000 Sa/s y la publicación continuó sin intervención (un segmento con CRC inválido durante el reinicio, descartado).
+
 \subsection{Hallazgo abierto sobre las entradas}
 
 Con las entradas sin una señal conocida, ambos canales muestran a 100 Sa/s un patrón periódico de 5 muestras entre 0 y 4095, compatible con entradas flotantes que captan la red eléctrica (alias de 20 Hz de un armónico de 120 Hz). UT-MCU-02 sigue pendiente: conectar GND, 3{,}3 V y un divisor a cada canal, con una tensión distinta en cada uno para confirmar el orden CH1/CH2.

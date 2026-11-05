@@ -33,7 +33,7 @@
 #define VFS_MV 3100.0  /* fondo de escala aprox. con atenuacion 12 dB */
 
 struct stats {
-	uint64_t windows, lost, dup, backward, crc_err, sync_err, io_err, soft_resync, cycles;
+	uint64_t windows, lost, dup, backward, esp_resets, crc_err, sync_err, io_err, soft_resync, cycles;
 	uint64_t seg_n, seg_sum_ns, seg_min_ns, seg_max_ns;
 	uint64_t cyc_sum_ns, cyc_max_ns;
 };
@@ -144,8 +144,8 @@ static int link_read_window(struct osc_window *out)
 				if (have_last) {
 					int16_t d = (int16_t)(aw - last_wseq);
 
-					if (d < 0) {
-						/* ventana mas vieja que la ultima publicada: no publicar */
+					if (d < 0 && d > -16) {
+						/* ventana un poco mas vieja que la ultima: no publicar */
 						st.backward++;
 						if (verbose) {
 							fprintf(stderr, "ventana hacia atras: ultima=%u recibida=%u\n",
@@ -153,7 +153,17 @@ static int link_read_window(struct osc_window *out)
 						}
 						return 0;
 					}
-					st.lost += (uint64_t)(d - 1);
+					if (d < 0) {
+						/* salto grande hacia atras: el ESP32 se reinicio
+						 * (WSEQ volvio a 0). Aceptar y reenviar el preset. */
+						st.esp_resets++;
+						fprintf(stderr, "ESP32 reiniciado (WSEQ %u -> %u)\n", last_wseq, aw);
+						if (preset_req >= 0) {
+							queue_command(OSC_CMD_SET_PRESET, (uint8_t)preset_req);
+						}
+					} else {
+						st.lost += (uint64_t)(d - 1);
+					}
 				}
 				last_wseq = aw;
 				have_last = 1;
@@ -229,11 +239,12 @@ static int build_json(char *buf, size_t sz)
 	double avg_seg = st.seg_n ? (double)st.seg_sum_ns / st.seg_n / 1000.0 : 0;
 
 	n += snprintf(buf + n, sz - n,
-		",\"stats\":{\"windows\":%llu,\"lost\":%llu,\"dup\":%llu,\"backward\":%llu,\"crc_err\":%llu,"
+		",\"stats\":{\"windows\":%llu,\"lost\":%llu,\"dup\":%llu,\"backward\":%llu,\"esp_resets\":%llu,\"crc_err\":%llu,"
 		"\"sync_err\":%llu,\"io_err\":%llu,\"soft_resync\":%llu,\"spi_hz\":%u,"
 		"\"gap_us\":%u,\"seg_avg_us\":%.1f,\"preset_req\":%d}}\n",
 		(unsigned long long)st.windows, (unsigned long long)st.lost,
 		(unsigned long long)st.dup, (unsigned long long)st.backward,
+		(unsigned long long)st.esp_resets,
 		(unsigned long long)st.crc_err, (unsigned long long)st.sync_err, (unsigned long long)st.io_err,
 		(unsigned long long)st.soft_resync, spim.speed_hz, spim.gap_us, avg_seg,
 		preset_req);

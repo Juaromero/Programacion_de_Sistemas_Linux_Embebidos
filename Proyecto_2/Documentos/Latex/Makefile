@@ -8,7 +8,8 @@ DOCS = 01_Especificacion_tecnica_y_arquitectura \
        03_Protocolo_SPI \
        04_Declaracion_participacion \
        05_Declaracion_uso_IA \
-       06_Registro_conversaciones
+       06_Registro_conversaciones \
+       07_Guia_operacion_y_pruebas_manuales
 
 PDFS = $(addprefix ../PDF/,$(addsuffix .pdf,$(DOCS)))
 

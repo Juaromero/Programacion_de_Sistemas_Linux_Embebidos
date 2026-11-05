@@ -141,3 +141,4 @@ Todos los documentos están en LaTeX en [`Documentos/Latex`](Documentos/Latex/) 
 4. Declaración de participación
 5. Declaración de uso de IA
 6. Registro de conversaciones
+7. **Guía de operación y pruebas manuales** (puesta en marcha paso a paso y 13 pruebas para una persona, con hoja de registro)

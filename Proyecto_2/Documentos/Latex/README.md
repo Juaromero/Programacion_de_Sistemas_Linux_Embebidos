@@ -10,6 +10,7 @@
 | `04_Declaracion_participacion.tex` | Documento 4: roles y aportes (completar nombres) |
 | `05_Declaracion_uso_IA.tex` | Documento 5: declaración de uso de IA |
 | `06_Registro_conversaciones.tex` | Documento 6: registro de chats |
+| `07_Guia_operacion_y_pruebas_manuales.tex` | Documento 7: puesta en marcha paso a paso y pruebas de funcionamiento para una persona, con hoja de registro |
 
 Para cambiar nombres de integrantes, fecha o título del proyecto basta editar `preambulo.tex` y `portada.tex`.
 
