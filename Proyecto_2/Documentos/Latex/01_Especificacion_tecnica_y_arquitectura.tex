@@ -153,7 +153,19 @@ El servicio se implementa en \textbf{C}. A 41\,667 Sa/s el ESP32-S3 produce una 
 
 El dashboard usa \textbf{uPlot}: es una librería MIT de $\approx$ 50 KB, dibuja en \texttt{canvas} con el menor consumo de CPU entre las alternativas habituales y se sirve localmente desde la Raspberry Pi, cumpliendo RNF-07 (sin dependencias de servicios externos ni CDN).
 
-Funciones del dashboard: gráfica de los dos canales con 8 divisiones de tiempo exactas, línea de 0 V y lectura con cursor; selección de preset y de refresco; activación y modo de entrada de cada canal (directo, $\pm 5$ V con acondicionador o personalizado) con calibración de cero; escala vertical según el modo o automática; mediciones por canal (mínimo, máximo, pico a pico, media, RMS de la componente alterna y frecuencia por cruces con histéresis); recomendación de la frecuencia de muestreo; pausa; exportación de la ventana a CSV, y estadísticas del enlace SPI.
+Funciones del dashboard: un panel por canal con su propia gráfica y eje de tiempo (8 divisiones exactas, línea de 0 V, lectura con cursor), interruptor de encendido, selección de preset propia y modo de entrada (directo, $\pm 5$ V con acondicionador o personalizado) con calibración de cero; mediciones por canal (mínimo, máximo, pico a pico, media, RMS de la componente alterna y frecuencia por cruces con histéresis) y recomendación de la frecuencia de muestreo con botón para aplicarla; botón para sincronizar los canales; refresco, escala vertical según el modo o automática, pausa, exportación a CSV y estadísticas del enlace SPI.
+
+\subsection{Muestreo independiente por canal}
+
+Cada canal se puede encender o apagar y tiene su propio preset. Como el ADC1 es un único conversor multiplexado, el firmware elige el modo de adquisición en cada ventana:
+
+\begin{itemize}
+  \item \textbf{Sincronizado:} ambos canales activos con el mismo preset (0 a 3). Se adquieren en una sola ráfaga con el patrón CH1, CH2, así que sus ventanas están alineadas en el tiempo (CH2 con un desfase de un intervalo de conversión). Es el modo para comparar señales entre sí.
+  \item \textbf{Independiente:} presets distintos, o el preset de 83\,333 Sa/s. Cada canal se adquiere en su propia ráfaga, uno detrás del otro y a su propia frecuencia. Las ventanas no están alineadas en el tiempo, y el ciclo dura la suma de las dos ventanas.
+  \item \textbf{Un canal:} el canal apagado no se adquiere. El otro se refresca más rápido y, sin compartir el conversor, alcanza 83\,333 Sa/s (preset 4), el doble del máximo con dos canales.
+\end{itemize}
+
+El formato de la ventana (versión 2, Documento 3) informa el preset, la frecuencia y el estado de cada canal y si están sincronizados. La Raspberry Pi acepta además el formato anterior (versión 1).
 
 \subsection{Medición de tensiones negativas}
 
@@ -243,6 +255,8 @@ RF-08 & El servicio en Linux almacena la última ventana válida para el servido
 RF-09 & El servidor HTTP publica el dashboard y los datos de la última ventana. \\
 RF-10 & El dashboard se actualiza con una tasa de refresco configurable entre 0{,}25 Hz y 1 Hz. \\
 RF-11 & Las ventanas adquiridas se muestran en el monitor serie del ESP32-S3. \\
+RF-12 & Cada canal se puede encender y apagar, y tiene su propia frecuencia de muestreo (preset). \\
+RF-13 & Con un solo canal activo se puede muestrear a 83\,333 Sa/s. \\
 \bottomrule
 \end{tabular}
 \caption{Requerimientos funcionales.}

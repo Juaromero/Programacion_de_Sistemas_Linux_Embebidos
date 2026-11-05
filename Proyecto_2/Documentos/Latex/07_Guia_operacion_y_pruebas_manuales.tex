@@ -185,7 +185,7 @@ ls /dev/ttyUSB*
 picocom -b 115200 /dev/ttyUSB1
 \end{verbatim}
 
-Si hay dos puertos, el del ESP32-S3 es el que responde con líneas \texttt{STAT}. Para salir de picocom: \textbf{Ctrl+A} y luego \textbf{Ctrl+X}. Las teclas 0, 1, 2 y 3 cambian el preset desde el monitor serie.
+Si hay dos puertos, el del ESP32-S3 es el que responde con líneas \texttt{STAT}. Para salir de picocom: \textbf{Ctrl+A} y luego \textbf{Ctrl+X}. Teclas del monitor serie: \textbf{0} a \textbf{4} cambian el preset de ambos canales (100, 1k, 10k, 41,7k y 83,3k Sa/s); \textbf{q} y \textbf{w} encienden o apagan CH1 y CH2; \textbf{a} y \textbf{s} pasan al siguiente preset de CH1 y CH2; \textbf{d} imprime un resumen de la última ráfaga DMA (diagnóstico).
 
 \subsection{Paso 6 (solo si se modificó el firmware): volver a programar el ESP32-S3}
 
@@ -352,7 +352,21 @@ El pin cambia de estado cada 8 ms, de modo que el período es 16 ms ($f = 62{,}5
   \item \textbf{Criterio:} lecturas dentro de $\pm 0{,}3$ V. \textbf{No} conectar nunca una tensión negativa directamente a GPIO1 o GPIO2, sin el acondicionador.
 \end{itemize}
 
-\subsection*{P-16. Exportar CSV y pausa}
+\subsection*{P-16. Encender y apagar cada canal}
+\begin{itemize}
+  \item \textbf{Pasos:} con la onda cuadrada en CH1 y CH2, apagar CH2 con su interruptor; luego encenderlo y apagar CH1.
+  \item \textbf{Esperado:} el panel del canal apagado se oscurece con el aviso «Canal apagado»; el indicador superior pasa a «un canal»; el otro canal sigue en vivo.
+  \item \textbf{Criterio:} cada canal se enciende y apaga sin afectar al otro.
+\end{itemize}
+
+\subsection*{P-17. Muestreo independiente por canal}
+\begin{itemize}
+  \item \textbf{Pasos:} poner CH1 en 10k y CH2 en 1k. Después pulsar «Sincronizar: CH2 igual a CH1». Por último apagar CH2 y poner CH1 en 83,3k.
+  \item \textbf{Esperado:} (1) indicador «independiente», cada gráfica con su propio eje de tiempo (6,4 ms y 64 ms); (2) indicador «sincronizada» y ambas etiquetas «sincronizado»; (3) CH1 con ventana de 768 µs.
+  \item \textbf{Criterio:} cada canal muestra la frecuencia elegida y las mediciones de frecuencia de la señal coinciden en ambos canales dentro de $\pm 10\,\%$ cuando cada uno tiene suficientes muestras por período.
+\end{itemize}
+
+\subsection*{P-18. Exportar CSV y pausa}
 \begin{itemize}
   \item \textbf{Pasos:} pulsar «Pausar» (la gráfica se congela y el indicador dice «en pausa»), pulsar «Exportar CSV» y abrir el archivo en una hoja de cálculo; pulsar «Reanudar».
   \item \textbf{Criterio:} el archivo tiene 64 filas con tiempo, tensiones y códigos de ambos canales, y la gráfica se reanuda.
@@ -394,7 +408,9 @@ P-12 & Recupera sin intervención & a) \quad b) \quad c) & \\[0.5cm]
 P-13 & 10 min, CRC = 0 & CRC final: & \\[0.5cm]
 P-14 & Frecuencia $\pm 10\,\%$, aviso coherente & Frecuencia: & \\[0.5cm]
 P-15 & $\pm 0{,}3$ V (con acondicionador) & 0 V: \quad +3,3 V: \quad $-3$ V: & \\[0.5cm]
-P-16 & CSV de 64 filas; pausa y reanudación & & \\[0.5cm]
+P-16 & Cada canal se apaga sin afectar al otro & & \\[0.5cm]
+P-17 & Frecuencia propia por canal; sincronización & CH1: \quad CH2: & \\[0.5cm]
+P-18 & CSV de 64 filas; pausa y reanudación & & \\[0.5cm]
 \bottomrule
 \end{tabular}
 \caption{Registro de las pruebas manuales.}

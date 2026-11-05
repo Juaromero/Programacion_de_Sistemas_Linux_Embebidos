@@ -3,7 +3,8 @@
 Osciloscopio de **2 canales**: una **ESP32-S3-DevKitC-1** (módulo WROOM-1 N8R2, Zephyr) digitaliza dos señales con su ADC de 12 bits y las entrega por **SPI** (esclavo) a una **Raspberry Pi 4 Model B** (maestro), que las publica en un **dashboard web** servido por **Nginx**. Las ventanas también se ven en el monitor serie del ESP32-S3.
 
 * Ventanas de **64 muestras por canal**, frecuencia de muestreo constante dentro de cada ventana.
-* Presets de muestreo intercambiables por SPI: **100, 1 000, 10 000 y 41 667 Sa/s** (este último cumple la bonificación ≥ 40 kSa/s).
+* Presets de muestreo intercambiables por SPI: **100, 1 000, 10 000 y 41 667 Sa/s** (este último cumple la bonificación ≥ 40 kSa/s), y **83 333 Sa/s** con un solo canal.
+* **Cada canal se enciende y apaga por separado y tiene su propia frecuencia de muestreo.** Con el mismo preset los canales se adquieren sincronizados; con presets distintos, de forma independiente.
 * Captura por **refresco de ventanas**: el ESP32-S3 adquiere de forma continua; la Raspberry Pi toma la más reciente.
 * Refresco del dashboard configurable entre **0,25 Hz** (4 s) y **1 Hz**.
 * Enlace verificado a **20 MHz**: ~586 ventanas/s a 41 667 Sa/s, **0 errores de CRC** en 5 minutos.
@@ -31,6 +32,10 @@ V_ADC = 1,563 V + 0,2632 · Vin (±5 V → 0,25 a 2,88 V). Con la entrada a GND 
 | 41,7 kSa/s | 1,5 ms | 20,8 kHz | 1,3 a 5,2 kHz |
 
 El dashboard estima la frecuencia de la señal y sugiere el preset adecuado. 41,7 kSa/s es el máximo del ADC con dos canales.
+
+![Dashboard con los dos canales sincronizados a 10 kSa/s midiendo una onda cuadrada de 500 Hz](Imagenes/Dashboard_sincronizado_10kSa.png)
+
+*Dashboard real en la Raspberry Pi: CH1 y CH2 sincronizados a 10 kSa/s con una onda cuadrada de 500 Hz en ambas entradas. En [esta captura](Imagenes/Dashboard_independiente_10k_1k.png) los canales son independientes (10 kSa/s y 1 kSa/s) y CH2 avisa del riesgo de aliasing.*
 
 ## Estructura
 
@@ -96,7 +101,7 @@ Requisitos: Zephyr 4.5 con su SDK 1.0.1 y `west` (entorno virtual del workspace)
    west flash -d ~/build/osc --esp-device /dev/ttyUSB1
    ```
    Si hay varios adaptadores, el ESP32-S3 se identifica con `udevadm info -q property -n /dev/ttyUSBx | grep ID_MODEL` (`CP2102N`) o con `esptool --port /dev/ttyUSBx chip-id`.
-3. **Monitor serie:** `picocom -b 115200 /dev/ttyUSB1`. Cada segundo imprime una línea `STAT` y las líneas `WIN … CH1/CH2` con la última ventana. Las teclas **0, 1, 2, 3** cambian el preset.
+3. **Monitor serie:** `picocom -b 115200 /dev/ttyUSB1`. Cada segundo imprime una línea `STAT` (canales activos, frecuencia de cada uno, modo sincronizado/independiente) y una línea `WIN` por canal activo. Teclas: **0–4** preset de ambos canales, **q/w** encender/apagar CH1/CH2, **a/s** siguiente preset de CH1/CH2, **d** diagnóstico de la última ráfaga DMA.
 
 La consola es **UART0** (micro-USB «UART» de la placa) a **115200 8N1**. Para usar el puerto USB nativo: `-- -DEXTRA_DTC_OVERLAY_FILE=boards/usb_console.overlay`.
 
@@ -115,7 +120,9 @@ Abrir `http://<ip-de-la-raspberry>/`. Comandos útiles:
 make test                                                   # pruebas del protocolo (sin hardware)
 sudo systemctl stop oscd                                    # liberar el bus antes del banco de pruebas
 sudo ./oscd --bench 3000 --preset 3 --speed 20000000 --gap-us 150   # banco de pruebas SPI
-curl -X POST 'http://localhost/api/preset?id=2'             # cambiar preset
+curl -X POST 'http://localhost/api/preset?id=2'             # preset de ambos canales (0..4)
+curl -X POST 'http://localhost/api/preset?ch=1&id=4'        # preset solo de CH1 (83,3 kSa/s)
+curl -X POST 'http://localhost/api/channel?ch=2&on=0'       # apagar CH2 (on=1 lo enciende)
 curl -X POST 'http://localhost/api/refresh?hz=0.25'         # cambiar refresco
 curl http://localhost/data/window.json                      # última ventana
 journalctl -u oscd -f                                       # registro del servicio
@@ -152,6 +159,7 @@ Desde Windows con PuTTY hace falta instalar el driver CP210x de Silicon Labs. Si
 | Firmware en la ESP32-S3-DevKitC-1 (4 presets, ADC con DMA, monitor serie) | Verificado en hardware |
 | Enlace SPI ESP32-S3 ↔ Raspberry Pi a 20 MHz, 4 presets, cambio de preset por SPI | Verificado (0 errores de CRC) |
 | Estabilidad de 5 min a 41 667 Sa/s (IT-07) | Aprobada |
+| Muestreo independiente por canal, encendido/apagado y 83,3 kSa/s (formato v2) | Verificado en hardware |
 | Nginx + API + JSON atómico + refresco + reinicio systemd | Verificado en la Raspberry Pi |
 | Consola UART de la Raspberry Pi | Verificada |
 | Calibración del ADC con señales conocidas (UT-MCU-02) | **Pendiente** |

@@ -60,7 +60,13 @@ static void handle_command(bool *resync)
 		return; /* sin comando o repeticion de uno ya ejecutado */
 	}
 	if (cmd == OSC_CMD_SET_PRESET) {
-		acq_request_preset(arg);
+		acq_request_preset(ACQ_BOTH, arg);         /* los dos canales */
+		cmd_ack = seq;
+	} else if (cmd == OSC_CMD_SET_CH_PRESET) {
+		acq_request_preset((arg >> 4) & 0x1, arg & 0x0F);
+		cmd_ack = seq;
+	} else if (cmd == OSC_CMD_SET_MASK) {
+		acq_request_mask(arg & 0x3);
 		cmd_ack = seq;
 	} else if (cmd == OSC_CMD_RESYNC) {
 		*resync = true;

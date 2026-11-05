@@ -11,3 +11,6 @@ target_sources(app PRIVATE
     src/spi_link.c
 )
 target_include_directories(app PRIVATE src)
+# Cabecera interna del driver ADC de Espressif: se usa para leer el bufer DMA crudo
+# (canal y validez de cada conversion), que la API de Zephyr no expone.
+target_include_directories(app PRIVATE ${ZEPHYR_BASE}/drivers/adc)

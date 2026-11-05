@@ -1,7 +1,7 @@
 /*
  * Protocolo SPI RPi (maestro) <-> ESP32-S3 (esclavo).
  * Debe coincidir con Firmware_ESP32S3/src/protocol.h.
- * Especificacion: Proyecto_2/Documentos/Protocolo_SPI.md
+ * Especificacion: Documentos/Latex/03_Protocolo_SPI.tex
  */
 #ifndef OSC_PROTOCOL_H
 #define OSC_PROTOCOL_H
@@ -11,7 +11,6 @@
 
 #define OSC_WIN_SAMPLES   64u
 #define OSC_NCH           2u
-#define OSC_WINHDR_LEN    8u
 #define OSC_DATA_LEN      (OSC_WIN_SAMPLES * OSC_NCH * 2u)   /* 256 */
 
 #define OSC_SEG_LEN       64u
@@ -21,15 +20,25 @@
 #define OSC_NSEG          5u
 #define OSC_STREAM_LEN    (OSC_SEG_PAYLOAD * OSC_NSEG)       /* 280 */
 
+/* Stream version 1 (firmware anterior): fs(u32) n(u16) n_ch(u8)=2 bits(u8)=12,
+ *   datos intercalados CH1,CH2.
+ * Stream version 2: [0]=2 [1]=mascara [2]=bits [3]=flags [4..5]=n [6]=preset CH1
+ *   [7]=preset CH2 [8..11]=fs CH1 [12..15]=fs CH2 [16..143]=CH1 [144..271]=CH2 */
+#define OSC_WINHDR_V1     8u
+#define OSC_WINHDR_V2     16u
+#define OSC_FLAG_ALIGNED  0x01u
+
 #define OSC_SYNC_TX       0xA5u   /* ESP32 -> RPi */
 #define OSC_SYNC_RX       0x5Au   /* RPi -> ESP32 */
 #define OSC_SEG_IDLE      0xFFu
 
-#define OSC_CMD_NOP         0x00u
-#define OSC_CMD_SET_PRESET  0x01u
-#define OSC_CMD_RESYNC      0x02u
+#define OSC_CMD_NOP           0x00u
+#define OSC_CMD_SET_PRESET    0x01u   /* arg = preset, ambos canales */
+#define OSC_CMD_RESYNC        0x02u
+#define OSC_CMD_SET_CH_PRESET 0x03u   /* arg = (canal << 4) | preset */
+#define OSC_CMD_SET_MASK      0x04u   /* arg = bit0 CH1, bit1 CH2 */
 
-#define OSC_NPRESETS      4u
+#define OSC_NPRESETS      5u
 
 /* CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF). "123456789" -> 0x29B1 */
 uint16_t osc_crc16(const uint8_t *data, size_t len);
@@ -51,15 +60,17 @@ void osc_cmd_build(uint8_t tx[OSC_SEG_LEN], uint8_t cmd, uint8_t arg, uint8_t se
 /* Ventana completa decodificada */
 struct osc_window {
 	uint16_t wseq;
-	uint8_t  preset;
-	uint32_t fs_hz;
+	uint8_t  version;          /* 1 o 2 */
+	uint8_t  mask;             /* canales adquiridos */
+	uint8_t  aligned;          /* 1 = CH1 y CH2 de la misma rafaga */
+	uint8_t  preset[OSC_NCH];
+	uint32_t fs[OSC_NCH];
 	uint16_t n;
-	uint8_t  n_ch;
 	uint8_t  bits;
 	uint16_t ch[OSC_NCH][OSC_WIN_SAMPLES];
 };
 
 int osc_stream_decode(const uint8_t stream[OSC_STREAM_LEN], uint16_t wseq,
-		      uint8_t preset, struct osc_window *w);
+		      uint8_t seg_preset, struct osc_window *w);
 
 #endif /* OSC_PROTOCOL_H */

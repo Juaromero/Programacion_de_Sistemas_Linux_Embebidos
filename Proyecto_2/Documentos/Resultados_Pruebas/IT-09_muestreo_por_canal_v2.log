@@ -1,0 +1,36 @@
+Pruebas: muestreo independiente por canal, encendido/apagado y formato v2
+Fecha: 2026-11-05   ESP32-S3-DevKitC-1 (WROOM-1 N8R2) + Raspberry Pi 4, SPI 20 MHz, guarda 150 us
+Senal en las entradas: onda cuadrada de 500 Hz, 0 V a 1,10 V, 50 % de ciclo util, en ambos canales
+
+### Monitor serie del ESP32-S3 (teclas 2, w, 4, w, s)
+STAT canales=CH1 CH2 ch1=10000 Sa/s ch2=10000 Sa/s modo=sincronizado ventanas=157 err_adc=0 t_adq=6618 us ...
+STAT canales=CH1  ch1=83333 Sa/s ch2=83333 Sa/s modo=independiente ventanas=993 err_adc=0 t_adq=854 us ...
+STAT canales=CH1 CH2 ch1=83333 Sa/s ch2=83333 Sa/s modo=independiente ventanas=4137 err_adc=0 t_adq=1734 us ...
+STAT canales=CH1 CH2 ch1=83333 Sa/s ch2=100 Sa/s modo=independiente ventanas=4477 err_adc=0 t_adq=640893 us ...
+
+### Compatibilidad con el firmware anterior (formato v1), servicio oscd nuevo
+formato v1 seq 36723 canales [(1, True, 10000), (2, True, 10000)] | win 580 crc 0 cmd_timeout 0
+preset 3 para ambos -> formato v1 canales [(1, True, 41667), (2, True, 41667)] | crc 0 cmd_timeout 0
+comando por canal (desconocido para v1) -> vence sin bloquear: cmd_timeout 1; el siguiente comando (preset 2) se aplico
+
+### API de control por canal (firmware nuevo, formato v2)
+== ambos a 1 kSa/s (sincronizados)       v2 sincronizado  [CH1 on 1000, CH2 on 1000]   pend 0
+== CH2 a 10 kSa/s (independientes)       v2 independiente [CH1 on 1000, CH2 on 10000]  pend 0
+== apagar CH2                            v2 independiente [CH1 on 1000, CH2 OFF]       pend 0
+== CH1 a 83,3 kSa/s (solo)               v2 independiente [CH1 on 83333, CH2 OFF]      pend 0
+== encender CH2                          v2 independiente [CH1 on 83333, CH2 on 10000] pend 0
+== volver: ambos a 1 kSa/s               v2 sincronizado  [CH1 on 1000, CH2 on 1000]   pend 0
+
+### Analisis de la senal a 10 kSa/s (window.json)
+ch1 fs=10000 #####__________##########__________##########__________#########
+   alto: 34 muestras, media 1458 (1.10 V) | bajo: 30 muestras, media 0 | frecuencia aprox: 500 Hz
+ch2 fs=10000 #####__________##########__________##########__________#########
+   alto: 34 muestras, media 1456 (1.10 V) | bajo: 30 muestras, media 0 | frecuencia aprox: 500 Hz
+
+### Diagnostico DMA (tecla d): todas las conversiones con canal y unidad validos
+DMA entradas=130 validas c0=65 c1=65 invalidas=0   (los valores 0 son el nivel bajo de la senal)
+
+### Dashboard (captura real)
+CH1 10 kSa/s: 499,5 Hz, 20 muestras por periodo (aviso verde)
+CH2 1 kSa/s : 500,0 Hz, 2 muestras por periodo (aviso rojo de aliasing; recomienda 10 kSa/s)
+Sincronizados a 10 kSa/s: CH1 500,0 Hz y CH2 500,0 Hz

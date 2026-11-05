@@ -20,19 +20,27 @@ uint16_t osc_crc16(const uint8_t *data, size_t len)
 	return crc16_itu_t(0xFFFF, data, len);
 }
 
-void osc_slot_fill(struct osc_slot *s, const uint16_t *pairs, uint32_t fs_hz,
-		   uint16_t wseq, uint8_t preset)
+void osc_slot_fill(struct osc_slot *s, const uint16_t *d1, const uint16_t *d2,
+		   const struct osc_win_info *info, uint16_t wseq)
 {
-	memset(s->stream, 0, sizeof(s->stream));
-	sys_put_le32(fs_hz, &s->stream[0]);
-	sys_put_le16(OSC_WIN_SAMPLES, &s->stream[4]);
-	s->stream[6] = OSC_NCH;
-	s->stream[7] = OSC_ADC_BITS;
-	for (uint32_t i = 0; i < OSC_WIN_SAMPLES * OSC_NCH; i++) {
-		sys_put_le16(pairs[i], &s->stream[OSC_WINHDR_LEN + 2 * i]);
+	uint8_t *b = s->stream;
+
+	memset(b, 0, sizeof(s->stream));
+	b[0] = OSC_STREAM_VER;
+	b[1] = info->mask;
+	b[2] = OSC_ADC_BITS;
+	b[3] = info->aligned ? OSC_FLAG_ALIGNED : 0;
+	sys_put_le16(OSC_WIN_SAMPLES, &b[4]);
+	b[6] = info->preset[0];
+	b[7] = info->preset[1];
+	sys_put_le32(info->fs[0], &b[8]);
+	sys_put_le32(info->fs[1], &b[12]);
+	for (uint32_t i = 0; i < OSC_WIN_SAMPLES; i++) {
+		sys_put_le16(d1[i], &b[OSC_WINHDR_LEN + 2 * i]);
+		sys_put_le16(d2[i], &b[OSC_WINHDR_LEN + 2 * (OSC_WIN_SAMPLES + i)]);
 	}
 	s->wseq = wseq;
-	s->preset = preset;
+	s->preset = info->preset[0];
 }
 
 void osc_segment_build(uint8_t out[OSC_SEG_LEN], const struct osc_slot *s,

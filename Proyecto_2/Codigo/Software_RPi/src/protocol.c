@@ -62,20 +62,47 @@ void osc_cmd_build(uint8_t tx[OSC_SEG_LEN], uint8_t cmd, uint8_t arg, uint8_t se
 }
 
 int osc_stream_decode(const uint8_t stream[OSC_STREAM_LEN], uint16_t wseq,
-		      uint8_t preset, struct osc_window *w)
+		      uint8_t seg_preset, struct osc_window *w)
 {
 	w->wseq = wseq;
-	w->preset = preset;
-	w->fs_hz = rd32(&stream[0]);
-	w->n = rd16(&stream[4]);
-	w->n_ch = stream[6];
-	w->bits = stream[7];
-	if (w->n != OSC_WIN_SAMPLES || w->n_ch != OSC_NCH) {
+	if (stream[6] == OSC_NCH && stream[7] == 12) {
+		/* Version 1: un solo preset, canales intercalados (firmware anterior) */
+		w->version = 1;
+		w->mask = 0x3;
+		w->aligned = 1;
+		w->fs[0] = w->fs[1] = rd32(&stream[0]);
+		w->preset[0] = w->preset[1] = seg_preset;
+		w->n = rd16(&stream[4]);
+		w->bits = stream[7];
+		if (w->n != OSC_WIN_SAMPLES) {
+			return -1;
+		}
+		for (unsigned i = 0; i < OSC_WIN_SAMPLES; i++) {
+			for (unsigned c = 0; c < OSC_NCH; c++) {
+				w->ch[c][i] = rd16(&stream[OSC_WINHDR_V1 + 2 * (OSC_NCH * i + c)]);
+			}
+		}
+		return 0;
+	}
+	if (stream[0] != 2) {
 		return -1;
 	}
-	for (unsigned i = 0; i < OSC_WIN_SAMPLES; i++) {
-		for (unsigned c = 0; c < OSC_NCH; c++) {
-			w->ch[c][i] = rd16(&stream[OSC_WINHDR_LEN + 2 * (OSC_NCH * i + c)]);
+	/* Version 2: preset y frecuencia por canal, datos por bloques */
+	w->version = 2;
+	w->mask = stream[1] & 0x3;
+	w->bits = stream[2];
+	w->aligned = (stream[3] & OSC_FLAG_ALIGNED) ? 1 : 0;
+	w->n = rd16(&stream[4]);
+	w->preset[0] = stream[6];
+	w->preset[1] = stream[7];
+	w->fs[0] = rd32(&stream[8]);
+	w->fs[1] = rd32(&stream[12]);
+	if (w->n != OSC_WIN_SAMPLES || w->preset[0] >= OSC_NPRESETS || w->preset[1] >= OSC_NPRESETS) {
+		return -1;
+	}
+	for (unsigned c = 0; c < OSC_NCH; c++) {
+		for (unsigned i = 0; i < OSC_WIN_SAMPLES; i++) {
+			w->ch[c][i] = rd16(&stream[OSC_WINHDR_V2 + 2 * (c * OSC_WIN_SAMPLES + i)]);
 		}
 	}
 	return 0;

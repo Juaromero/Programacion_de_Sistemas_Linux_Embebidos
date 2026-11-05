@@ -12,11 +12,16 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* ---- Geometria de la ventana ---- */
+/* ---- Geometria de la ventana (stream version 2) ----
+ * [0] version=2 [1] mascara de canales [2] bits [3] flags (bit0 = sincronizados)
+ * [4..5] n=64 [6] preset CH1 [7] preset CH2 [8..11] fs CH1 [12..15] fs CH2
+ * [16..143] CH1: 64 x uint16   [144..271] CH2: 64 x uint16   [272..279] relleno */
 #define OSC_WIN_SAMPLES   64u   /* muestras por canal */
 #define OSC_NCH           2u
 #define OSC_ADC_BITS      12u
-#define OSC_WINHDR_LEN    8u    /* fs_hz(u32) n(u16) n_ch(u8) bits(u8) */
+#define OSC_STREAM_VER    2u
+#define OSC_WINHDR_LEN    16u
+#define OSC_FLAG_ALIGNED  0x01u
 #define OSC_DATA_LEN      (OSC_WIN_SAMPLES * OSC_NCH * 2u)       /* 256 */
 
 /* ---- Segmento SPI (64 bytes) ---- */
@@ -35,24 +40,33 @@
 #define OSC_CMD_NOP         0x00u
 #define OSC_CMD_SET_PRESET  0x01u
 #define OSC_CMD_RESYNC      0x02u
+#define OSC_CMD_SET_CH_PRESET 0x03u /* arg = (canal << 4) | preset, canal 0 o 1 */
+#define OSC_CMD_SET_MASK    0x04u   /* arg = mascara: bit0 CH1, bit1 CH2 */
 #define OSC_CMD_LEN         8u  /* sync, cmd, arg, cmd_seq, rsv(2), crc(2) */
 
 /* ---- Presets ---- */
-#define OSC_NPRESETS      4u
+#define OSC_NPRESETS      5u    /* 100, 1k, 10k, 41.7k y 83.3k Sa/s (este, un canal por rafaga) */
+
+/* Descripcion de una ventana */
+struct osc_win_info {
+	uint32_t fs[OSC_NCH];     /* Sa/s por canal */
+	uint8_t  preset[OSC_NCH];
+	uint8_t  mask;            /* canales adquiridos */
+	uint8_t  aligned;         /* 1 = CH1 y CH2 de la misma rafaga */
+};
 
 /* Slot de ventana (3 slots en anillo: acquisition escribe, SPI lee). */
 struct osc_slot {
 	uint8_t  stream[OSC_STREAM_LEN]; /* winhdr + datos + relleno */
 	uint16_t wseq;
-	uint8_t  preset;
+	uint8_t  preset;                 /* preset de CH1 (campo PRESET del segmento) */
 };
 
 uint16_t osc_crc16(const uint8_t *data, size_t len);
 
-/* Construye el stream de una ventana a partir de muestras intercaladas
- * [CH1,CH2,CH1,CH2,...] (64 pares, uint16 little-endian en memoria). */
-void osc_slot_fill(struct osc_slot *s, const uint16_t *pairs, uint32_t fs_hz,
-		   uint16_t wseq, uint8_t preset);
+/* Construye el stream (version 2) de una ventana con los datos de cada canal. */
+void osc_slot_fill(struct osc_slot *s, const uint16_t *d1, const uint16_t *d2,
+		   const struct osc_win_info *info, uint16_t wseq);
 
 /* Genera el segmento idx (0..4) del slot; con s == NULL genera IDLE. */
 void osc_segment_build(uint8_t out[OSC_SEG_LEN], const struct osc_slot *s,

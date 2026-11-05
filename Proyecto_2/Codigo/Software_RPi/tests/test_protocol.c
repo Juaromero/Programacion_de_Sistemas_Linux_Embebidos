@@ -57,16 +57,43 @@ int main(void)
 	}
 	struct osc_window w;
 
-	CHECK(osc_stream_decode(rs, 777, 2, &w) == 0 && w.fs_hz == 10000 && w.n == 64 &&
-	      w.n_ch == 2 && w.bits == 12, "encabezado de ventana");
+	CHECK(osc_stream_decode(rs, 777, 2, &w) == 0 && w.version == 1 && w.fs[0] == 10000 &&
+	      w.fs[1] == 10000 && w.n == 64 && w.mask == 3 && w.aligned == 1 && w.bits == 12,
+	      "v1: encabezado de ventana (firmware anterior)");
 	CHECK(w.ch[0][0] == 0 && w.ch[1][0] == 31 && w.ch[0][1] == 62 && w.ch[1][63] == (127 * 31 % 4096),
-	      "intercalado CH1/CH2");
+	      "v1: intercalado CH1/CH2");
+
+	/* Formato v2: preset y fs por canal, datos por bloques */
+	uint8_t s2[280] = { 0 };
+	uint32_t f1 = 83333, f2 = 100;
+
+	s2[0] = 2; s2[1] = 0x3; s2[2] = 12; s2[3] = 0; s2[4] = 64; s2[5] = 0;
+	s2[6] = 4; s2[7] = 0;
+	memcpy(&s2[8], &f1, 4);
+	memcpy(&s2[12], &f2, 4);
+	for (int i = 0; i < 64; i++) {
+		uint16_t a = (uint16_t)(i * 10), b = (uint16_t)(4000 - i * 10);
+
+		s2[16 + 2 * i] = a & 0xFF; s2[17 + 2 * i] = a >> 8;
+		s2[144 + 2 * i] = b & 0xFF; s2[145 + 2 * i] = b >> 8;
+	}
+	CHECK(osc_stream_decode(s2, 9, 4, &w) == 0 && w.version == 2 && w.fs[0] == 83333 &&
+	      w.fs[1] == 100 && w.preset[0] == 4 && w.preset[1] == 0 && w.mask == 3 && w.aligned == 0,
+	      "v2: presets y frecuencias por canal");
+	CHECK(w.ch[0][0] == 0 && w.ch[0][63] == 630 && w.ch[1][0] == 4000 && w.ch[1][63] == 3370,
+	      "v2: bloques CH1 y CH2");
+	s2[6] = 9;
+	CHECK(osc_stream_decode(s2, 9, 4, &w) < 0, "v2: preset invalido rechazado");
 
 	uint8_t cmd[64];
 
 	osc_cmd_build(cmd, OSC_CMD_SET_PRESET, 3, 5);
 	CHECK(cmd[0] == 0x5A && cmd[1] == 1 && cmd[2] == 3 && cmd[3] == 5 &&
 	      osc_crc16(cmd, 6) == (uint16_t)(cmd[6] | cmd[7] << 8), "comando SET_PRESET con CRC");
+	osc_cmd_build(cmd, OSC_CMD_SET_CH_PRESET, (1 << 4) | 2, 6);
+	CHECK(cmd[1] == 3 && cmd[2] == 0x12, "comando SET_CH_PRESET (CH2, 10 kSa/s)");
+	osc_cmd_build(cmd, OSC_CMD_SET_MASK, 0x1, 7);
+	CHECK(cmd[1] == 4 && cmd[2] == 0x1, "comando SET_MASK (solo CH1)");
 
 	printf("%s (%d fallos)\n", fails ? "RESULTADO: FALLO" : "RESULTADO: OK", fails);
 	return fails ? 1 : 0;

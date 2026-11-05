@@ -7,140 +7,153 @@
 <link rel="stylesheet" href="uPlot.min.css">
 <style>
   :root {
-    --bg: #0b1016; --panel: #121a24; --panel2: #18222f; --line: #243244;
-    --fg: #e6edf5; --mut: #8696a8; --ch1: #f5b942; --ch2: #38bdf8;
-    --ok: #34d399; --warn: #fbbf24; --bad: #f87171; --acc: #3b82f6;
+    --bg: #0a0e14; --panel: #111823; --panel2: #172131; --panel3: #1c2838; --line: #223044;
+    --fg: #e7eef6; --mut: #8193a8; --dim: #5b6b80;
+    --ch1: #f5b942; --ch2: #38bdf8; --ok: #34d399; --warn: #fbbf24; --bad: #f87171; --acc: #3b82f6;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between;
-           padding: 12px 22px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  header h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: .2px; }
-  header h1 small { color: var(--mut); font-weight: 400; margin-left: 6px; }
+  html, body { margin: 0; background: radial-gradient(1200px 600px at 10% -10%, #14213a 0%, var(--bg) 55%) fixed; color: var(--fg);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: rgba(13, 19, 28, .88); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, #1d3a66, #0f1a2b); border: 1px solid #2c4a75;
+    display: grid; place-items: center; }
+  .brand h1 { margin: 0; font-size: 16.5px; font-weight: 650; letter-spacing: .2px; }
+  .brand small { display: block; color: var(--mut); font-size: 12px; font-weight: 400; }
   .pills { display: flex; flex-wrap: wrap; gap: 8px; }
   .pill { padding: 4px 11px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--line); font-size: 12.5px; color: var(--mut); white-space: nowrap; }
   .pill b { color: var(--fg); font-weight: 600; }
   .pill.ok { color: var(--ok); border-color: #1f5c46; } .pill.warn { color: var(--warn); border-color: #6b5417; } .pill.bad { color: var(--bad); border-color: #6b2626; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; }
-  main { max-width: 1320px; margin: 0 auto; padding: 16px 18px 30px; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
-  .left { display: grid; gap: 14px; min-width: 0; }
-  .btn { white-space: nowrap; }
-  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-  .card h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--mut); font-weight: 600; }
-  .scope { padding: 10px 10px 4px; }
-  .scope-top { display: flex; justify-content: space-between; align-items: center; padding: 2px 6px 8px; gap: 8px; flex-wrap: wrap; }
-  .scope-top .meta { color: var(--mut); font-size: 12.5px; }
-  #plot { background: #070b10; border-radius: 8px; border: 1px solid #1a2532; }
-  .u-legend { color: var(--fg); font-size: 12.5px; padding: 6px 4px 2px; }
-  .u-legend .u-marker { border-radius: 2px; }
-  .u-axis { color: var(--mut); }
-  .side { display: grid; gap: 14px; align-content: start; }
-  .seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .seg.three { grid-template-columns: repeat(3, 1fr); }
-  button, select, input { font: inherit; color: var(--fg); }
-  .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px; cursor: pointer; transition: background .15s, border-color .15s; }
-  .btn:hover { border-color: #3a4b62; background: #1d2938; }
-  .btn.active { background: #1d3a66; border-color: var(--acc); color: #fff; }
-  .btn.small { padding: 4px 8px; font-size: 12.5px; }
-  .btn:disabled { opacity: .4; cursor: default; }
-  .btn:disabled:hover { background: var(--panel2); border-color: var(--line); }
-  .btn.wide { width: 100%; }
-  select, input[type=number] { background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; width: 100%; }
-  .ch { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
-  .ch:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
-  .ch-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .ch-name { font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .swatch { width: 14px; height: 4px; border-radius: 2px; }
-  .switch { position: relative; width: 36px; height: 20px; }
-  .switch input { opacity: 0; width: 0; height: 0; }
-  .switch span { position: absolute; inset: 0; background: #2a3646; border-radius: 999px; cursor: pointer; transition: .2s; }
-  .switch span::after { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #cbd5e1; border-radius: 50%; transition: .2s; }
-  .switch input:checked + span { background: var(--acc); }
-  .switch input:checked + span::after { transform: translateX(16px); background: #fff; }
-  .row { display: flex; gap: 6px; margin-top: 6px; }
-  .row > * { flex: 1; }
-  .hint { color: var(--mut); font-size: 12px; margin-top: 6px; }
-  label.f { display: block; font-size: 12px; color: var(--mut); margin: 6px 0 3px; }
-  .meas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  @media (max-width: 700px) { .meas { grid-template-columns: 1fr; } }
-  .mgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .m { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
-  .m .k { font-size: 11.5px; color: var(--mut); }
-  .m .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .advice { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; background: #10251c; border: 1px solid #1f5c46; color: #b7f0d6; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; box-shadow: 0 0 8px currentColor; }
+  main { max-width: 1380px; margin: 0 auto; padding: 18px 20px 34px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 310px; align-items: start; }
+  @media (max-width: 1040px) { main { grid-template-columns: 1fr; } }
+  .stack { display: grid; gap: 16px; min-width: 0; }
+  .card { background: linear-gradient(180deg, var(--panel) 0%, #0f151f 100%); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  .card h2 { margin: 0 0 10px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .9px; color: var(--mut); font-weight: 650; }
+
+  /* ---- Panel de canal ---- */
+  .chan { padding: 0; overflow: hidden; border-top: 3px solid var(--c); }
+  .chan.off { opacity: .92; }
+  .chan-head { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: space-between; padding: 12px 16px 10px; }
+  .chan-title { display: flex; align-items: center; gap: 10px; }
+  .chan-title .name { font-size: 16px; font-weight: 700; color: var(--c); letter-spacing: .3px; }
+  .chan-title .sub { color: var(--mut); font-size: 12.5px; }
+  .tag { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--mut); background: var(--panel2); }
+  .tag.sync { color: #a7f3d0; border-color: #1f5c46; background: #0f241c; }
+  .tag.ind { color: #bfdbfe; border-color: #1e3a8a; background: #0f1a33; }
+  .tag.offt { color: #fca5a5; border-color: #6b2626; background: #2a1414; }
+  .chan-ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; }
+  .seg button { background: transparent; border: 0; color: var(--mut); padding: 5px 9px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12.5px; white-space: nowrap; }
+  .seg button:hover:not(:disabled) { color: var(--fg); background: var(--panel3); }
+  .seg button.active { background: var(--c, var(--acc)); color: #0a0e14; font-weight: 650; }
+  .seg button:disabled { opacity: .35; cursor: not-allowed; }
+  .plotwrap { position: relative; margin: 0 12px; border-radius: 10px; border: 1px solid #1a2636;
+    background: radial-gradient(ellipse at center, #0b121c 0%, #060a10 100%); }
+  .offmask { position: absolute; inset: 0; display: none; place-items: center; color: var(--mut); font-size: 14px;
+    background: rgba(6, 10, 16, .78); border-radius: 10px; z-index: 2; text-align: center; }
+  .chan.off .offmask { display: grid; }
+  .u-legend { color: var(--fg); font-size: 12px; padding: 4px 6px 2px; }
+  .u-legend .u-series:first-child { color: var(--mut); }
+  .u-cursor-x, .u-cursor-y { border-color: rgba(231, 238, 246, .35) !important; }
+  .chan-foot { padding: 12px 16px 14px; display: grid; gap: 10px; }
+  .mgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 760px) { .mgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .m { background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; }
+  .m .k { font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .5px; }
+  .m .v { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .m.hl .v { color: var(--c); }
+  .advice { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 9px; font-size: 12.5px;
+    background: #0f241c; border: 1px solid #1f5c46; color: #b7f0d6; }
   .advice.warn { background: #2a2210; border-color: #6b5417; color: #fde7a7; }
   .advice.bad { background: #2a1414; border-color: #6b2626; color: #fecaca; }
   .advice.off { background: var(--panel2); border-color: var(--line); color: var(--mut); }
+  .advice button { flex: 0 0 auto; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .opts label { color: var(--mut); font-size: 12px; }
+  select, input[type=number] { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; color: var(--fg); font: inherit; font-size: 12.5px; }
+  input[type=number] { width: 92px; }
+  .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; color: var(--fg); cursor: pointer; font: inherit; font-size: 12.5px; white-space: nowrap; transition: background .15s, border-color .15s; }
+  .btn:hover:not(:disabled) { border-color: #3a4b62; background: var(--panel3); }
+  .btn.active { background: #1d3a66; border-color: var(--acc); }
+  .btn.primary { background: #1d3a66; border-color: var(--acc); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.wide { width: 100%; }
+  .switch { position: relative; width: 44px; height: 24px; flex: 0 0 auto; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch span { position: absolute; inset: 0; background: #2a3646; border-radius: 999px; cursor: pointer; transition: .2s; }
+  .switch span::after { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #cbd5e1; border-radius: 50%; transition: .2s; }
+  .switch input:checked + span { background: var(--c, var(--acc)); }
+  .switch input:checked + span::after { transform: translateX(20px); background: #0a0e14; }
+  .switch input:disabled + span { opacity: .4; cursor: not-allowed; }
+
+  /* ---- Barra lateral ---- */
+  .side { display: grid; gap: 16px; align-content: start; position: sticky; top: 74px; }
+  @media (max-width: 1040px) { .side { position: static; } }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  td { padding: 4px 2px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-  td:last-child { text-align: right; }
-  td:first-child { color: var(--mut); }
-  .info p { margin: 0 0 6px; font-size: 12.5px; color: #c6d2df; }
-  .info b { color: var(--fg); }
-  .bottom { grid-column: 1 / -1; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) 300px; }
-  @media (max-width: 980px) { .bottom { grid-template-columns: 1fr; } }
+  td, th { padding: 5px 2px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; text-align: left; }
+  th { color: var(--mut); font-weight: 600; font-size: 11.5px; }
+  td:last-child, th:last-child { text-align: right; }
+  td.k { color: var(--mut); }
+  .note { color: var(--mut); font-size: 12px; margin-top: 8px; }
+  .acqmode { font-size: 13px; padding: 9px 11px; border-radius: 9px; background: var(--panel2); border: 1px solid var(--line); }
+  .acqmode b { display: block; margin-bottom: 2px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Osciloscopio de 2 canales <small>ESP32-S3 + Raspberry Pi 4</small></h1>
+  <div class="brand">
+    <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7fb2ff" stroke-width="2" stroke-linecap="round"><path d="M2 12h3l2-6 4 12 3-9 2 3h6"/></svg></div>
+    <div><h1>Osciloscopio de 2 canales</h1><small>ESP32-S3 + Raspberry Pi 4 · SPI · 12 bits</small></div>
+  </div>
   <div class="pills">
     <span id="state" class="pill"><span class="dot"></span>conectando…</span>
-    <span class="pill">Muestreo <b id="hFs">—</b></span>
-    <span class="pill">Ventana <b id="hTw">—</b></span>
+    <span class="pill">Adquisición <b id="hMode">—</b></span>
     <span class="pill">Ventana # <b id="hSeq">—</b></span>
+    <span class="pill">Refresco <b id="hHz">—</b></span>
   </div>
 </header>
 
 <main>
-  <div class="left">
-  <section class="card scope">
-    <div class="scope-top">
-      <span class="meta" id="scopeMeta">64 muestras por canal · 12 bits</span>
-      <div class="row" style="margin:0; flex:0 0 auto">
-        <button class="btn small" id="btnPause">Pausar</button>
-        <button class="btn small" id="btnCsv">Exportar CSV</button>
-      </div>
-    </div>
-    <div id="plot"></div>
-  </section>
-  <div class="meas" id="meas"></div>
-  </div>
+  <div class="stack" id="channels"></div>
 
   <aside class="side">
     <section class="card">
-      <h2>Frecuencia de muestreo</h2>
-      <div class="seg" id="presets"></div>
-      <div class="hint" id="presetHint"></div>
+      <h2>Adquisición</h2>
+      <div class="acqmode" id="acqInfo">—</div>
+      <button class="btn wide" id="btnSync" style="margin-top:8px">Sincronizar: CH2 igual a CH1</button>
+      <div class="note">Con el mismo preset, los dos canales se adquieren en la misma ráfaga y quedan alineados en el tiempo.</div>
     </section>
 
     <section class="card">
-      <h2>Refresco de la pantalla</h2>
-      <div class="seg three" id="refresh"></div>
-    </section>
-
-    <section class="card">
-      <h2>Canales</h2>
-      <div id="chanCfg"></div>
-    </section>
-
-    <section class="card">
-      <h2>Escala vertical</h2>
-      <div class="seg">
+      <h2>Pantalla</h2>
+      <div class="note" style="margin:0 0 6px">Refresco</div>
+      <div class="grid3" id="refresh"></div>
+      <div class="note" style="margin:10px 0 6px">Escala vertical</div>
+      <div class="grid2">
         <button class="btn" data-y="mode">Según el modo</button>
         <button class="btn" data-y="auto">Automática</button>
       </div>
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn" id="btnPause">Pausar</button>
+        <button class="btn" id="btnCsv">Exportar CSV</button>
+      </div>
     </section>
-  </aside>
 
-  <div class="bottom">
-    <section class="card info" id="fsInfo"></section>
+    <section class="card">
+      <h2>Frecuencias de muestreo</h2>
+      <table id="fsTable"></table>
+      <div class="note">Rango útil: 8 a 32 muestras por período (2 a 8 períodos en la ventana de 64 muestras). Sin filtro antialiasing: por encima de Nyquist la frecuencia medida es falsa.</div>
+    </section>
+
     <section class="card">
       <h2>Enlace SPI y servicio</h2>
       <table id="stats"></table>
     </section>
-  </div>
+  </aside>
 </main>
 
 <script src="uPlot.iife.min.js"></script>
@@ -150,20 +163,21 @@
 
   /* ---------- Configuración ---------- */
   const PRESETS = [
-    { id: 0, fs: 100,   label: "100 Sa/s" },
-    { id: 1, fs: 1000,  label: "1 kSa/s" },
-    { id: 2, fs: 10000, label: "10 kSa/s" },
-    { id: 3, fs: 41667, label: "41,7 kSa/s" }
+    { id: 0, fs: 100,   label: "100" },
+    { id: 1, fs: 1000,  label: "1k" },
+    { id: 2, fs: 10000, label: "10k" },
+    { id: 3, fs: 41667, label: "41,7k" },
+    { id: 4, fs: 83333, label: "83,3k" }
   ];
   const REFRESH = [0.25, 0.5, 1];
   /* Vin = (Vadc - offset - cal) / gain.  El ADC solo mide de 0 a ~3,1 V. */
   const MODES = {
-    direct: { name: "Directo (0 a 3,1 V)", offset: 0, gain: 1, range: [-0.2, 3.4] },
+    direct: { name: "Directo (0 a 3,1 V)", offset: 0, gain: 1, range: [-0.15, 3.35] },
     pm5:    { name: "±5 V con acondicionador", offset: 1.563, gain: 0.2632, range: [-6, 6] },
     custom: { name: "Personalizado", offset: 0, gain: 1, range: null }
   };
   const COLORS = ["#f5b942", "#38bdf8"];
-  const STORE = "osc.cfg.v2";
+  const STORE = "osc.cfg.v3";
 
   const $ = (id) => document.getElementById(id);
   const fmt = (v, d) => (v == null || !isFinite(v)) ? "—" : v.toFixed(d).replace(".", ",");
@@ -171,19 +185,21 @@
   const fmtHz = (f) => (f == null || !isFinite(f)) ? "—" : (f >= 1000 ? fmt(f / 1000, 2) + " kHz" : fmt(f, f < 10 ? 2 : 1) + " Hz");
   const fmtFs = (fs) => fs >= 1000 ? fmt(fs / 1000, fs % 1000 ? 1 : 0) + " kSa/s" : fs + " Sa/s";
   const fmtT = (ms) => ms >= 1 ? fmt(ms, ms >= 100 ? 0 : (ms >= 10 ? 1 : 2)) + " ms" : fmt(ms * 1000, 0) + " µs";
+  const presetByFs = (fs) => PRESETS.find((p) => p.fs === fs);
 
   let cfg = {
     yMode: "mode",
     ch: [
-      { show: true, mode: "direct", offset: 0, gain: 1, cal: 0 },
-      { show: true, mode: "direct", offset: 0, gain: 1, cal: 0 }
+      { mode: "direct", offset: 0, gain: 1, cal: 0 },
+      { mode: "direct", offset: 0, gain: 1, cal: 0 }
     ]
   };
   try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.ch && s.ch.length === 2) cfg = Object.assign(cfg, s); } catch (e) { /* sin configuración guardada */ }
   const save = () => localStorage.setItem(STORE, JSON.stringify(cfg));
 
-  let plot = null, timer = null, paused = false, last = null, lastSeq = null, refreshHz = 1, failures = 0;
-  let windowMs = 640;   /* duración de la ventana: el eje de tiempo son 8 divisiones exactas */
+  const plots = [null, null];
+  const winMs = [640, 640];
+  let timer = null, paused = false, last = null, lastSeq = null, refreshHz = 1, failures = 0;
 
   /* ---------- Conversión y mediciones ---------- */
   function chParams(c) {
@@ -199,8 +215,7 @@
     const n = v.length;
     let mn = Infinity, mx = -Infinity, s = 0, s2 = 0;
     for (const x of v) { if (x < mn) mn = x; if (x > mx) mx = x; s += x; s2 += x * x; }
-    const mean = s / n, rms = Math.sqrt(s2 / n), pp = mx - mn;
-    const ac = Math.sqrt(Math.max(0, s2 / n - mean * mean));
+    const mean = s / n, pp = mx - mn, ac = Math.sqrt(Math.max(0, s2 / n - mean * mean));
     let f = null, crossings = 0;
     if (pp > 0.05) {          /* por debajo de 50 mV pico a pico se considera ruido */
       const h = 0.1 * pp, hi = mean + h, lo = mean - h, cross = [];
@@ -218,10 +233,11 @@
       crossings = cross.length;
       if (cross.length >= 2) f = (cross.length - 1) * fs / (cross[cross.length - 1] - cross[0]);
     }
-    return { mn, mx, pp, mean, rms, ac, f, crossings };
+    return { mn, mx, pp, mean, ac, f, crossings };
   }
-  /* Ideal para ver la forma: 8 a 32 muestras por período (2 a 8 períodos en la ventana de 64). */
-  function recommend(f) {
+  function recommend(f, fsNow) {
+    const sppNow = fsNow / f;
+    if (sppNow >= 8 && sppNow <= 32) return presetByFs(fsNow) || null;   /* la actual ya es adecuada */
     let best = null, score = Infinity;
     for (const p of PRESETS) {
       const spp = p.fs / f;
@@ -234,125 +250,215 @@
     if (m.pp < 0.05) return { cls: "off", txt: "Señal casi constante: no hay forma de onda que analizar." };
     if (m.f == null) {
       return { cls: "warn", txt: m.crossings <= 1
-        ? "Menos de dos ciclos en la ventana: la señal es más lenta que la ventana. Baje la frecuencia de muestreo para ver períodos completos."
+        ? "Menos de dos ciclos en la ventana: la señal es más lenta que la ventana. Baje la frecuencia de muestreo."
         : "No se pudo estimar la frecuencia (señal irregular o ruido)." };
     }
-    const spp = fs / m.f, periods = m.f * n / fs, rec = recommend(m.f);
-    const recTxt = rec && rec.fs !== fs ? " Recomendado: <b>" + rec.label + "</b>." : " La frecuencia de muestreo actual es adecuada.";
-    if (spp < 4) return { cls: "bad", txt: "Solo " + fmt(spp, 1) + " muestras por período: riesgo alto de <i>aliasing</i> (la frecuencia medida puede ser falsa)." + recTxt };
-    if (spp < 8) return { cls: "warn", txt: fmt(spp, 1) + " muestras por período: la forma de onda se ve aproximada." + recTxt };
-    if (periods < 2) return { cls: "warn", txt: "Solo " + fmt(periods, 1) + " períodos en la ventana." + recTxt };
-    return { cls: "", txt: fmt(spp, 1) + " muestras por período y " + fmt(periods, 1) + " períodos en la ventana." + recTxt };
+    const spp = fs / m.f, periods = m.f * n / fs, rec = recommend(m.f, fs);
+    const recOk = !rec || rec.fs === fs;
+    const recTxt = recOk ? " La frecuencia de muestreo es adecuada." : " Recomendado: <b>" + fmtFs(rec.fs) + "</b>.";
+    let cls = "", txt;
+    if (spp < 4) { cls = "bad"; txt = "Solo " + fmt(spp, 1) + " muestras por período: riesgo de <i>aliasing</i>."; }
+    else if (spp < 8) { cls = "warn"; txt = fmt(spp, 1) + " muestras por período: forma aproximada."; }
+    else if (periods < 2) { cls = "warn"; txt = "Solo " + fmt(periods, 1) + " períodos en la ventana."; }
+    else { txt = fmt(spp, 1) + " muestras por período · " + fmt(periods, 1) + " períodos en la ventana."; }
+    return { cls, txt: txt + recTxt, rec: recOk ? null : rec };
   }
 
-  /* ---------- Gráfica ---------- */
-  function yRange(u, min, max) {
-    const shown = [0, 1].filter((c) => cfg.ch[c].show);
-    if (cfg.yMode === "mode" && shown.length) {
-      let lo = Infinity, hi = -Infinity, fixed = true;
-      for (const c of shown) {
+  /* ---------- Gráficas ---------- */
+  function yRange(c) {
+    return (u, min, max) => {
+      if (cfg.yMode === "mode") {
         const r = MODES[cfg.ch[c].mode].range;
-        if (!r) { fixed = false; break; }
-        lo = Math.min(lo, r[0]); hi = Math.max(hi, r[1]);
+        if (r) return r.slice();
       }
-      if (fixed) return [lo, hi];
-    }
-    if (min == null || max == null || !isFinite(min)) return [-1, 1];
-    const pad = Math.max((max - min) * 0.12, 0.05);
-    return [min - pad, max + pad];
+      if (min == null || max == null || !isFinite(min)) return [-1, 1];
+      const pad = Math.max((max - min) * 0.12, 0.05);
+      return [min - pad, max + pad];
+    };
   }
   function zeroLine(u) {
-    const y = u.valToPos(0, "y", true), b = u.bbox;
+    const y = u.valToPos(0, "y", true), b = u.bbox, r = devicePixelRatio;
     if (y < b.top || y > b.top + b.height) return;
     const ctx = u.ctx;
     ctx.save();
-    ctx.strokeStyle = "rgba(230,237,245,.45)"; ctx.lineWidth = 1; ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = "rgba(231,238,246,.4)"; ctx.lineWidth = r; ctx.setLineDash([6 * r, 5 * r]);
     ctx.beginPath(); ctx.moveTo(b.left, y); ctx.lineTo(b.left + b.width, y); ctx.stroke();
-    ctx.fillStyle = "rgba(230,237,245,.6)"; ctx.font = (11 * devicePixelRatio) + "px system-ui";
-    ctx.textAlign = "right";
-    ctx.fillText("0 V", b.left + b.width - 6 * devicePixelRatio, y - 4 * devicePixelRatio);
+    ctx.fillStyle = "rgba(231,238,246,.55)"; ctx.font = (11 * r) + "px system-ui"; ctx.textAlign = "right";
+    ctx.fillText("0 V", b.left + b.width - 6 * r, y - 4 * r);
     ctx.restore();
   }
-  function plotHeight() { return window.innerWidth < 700 ? 300 : 430; }
-  function mkPlot() {
-    const el = $("plot");
-    plot = new uPlot({
-      width: el.clientWidth || 900,
+  function plotHeight() { return window.innerWidth < 760 ? 220 : 270; }
+  function mkPlot(c) {
+    const el = $("plot" + c), col = COLORS[c];
+    const axis = { stroke: "#7d8ea3", grid: { stroke: "rgba(120,140,170,.13)", width: 1 }, ticks: { stroke: "rgba(120,140,170,.25)", width: 1 }, font: "11px system-ui" };
+    plots[c] = new uPlot({
+      width: el.clientWidth || 800,
       height: plotHeight(),
-      cursor: { drag: { x: false, y: false }, points: { size: 7 } },
+      padding: [12, 28, 0, 4],
+      cursor: { drag: { x: false, y: false }, points: { size: 8, fill: col } },
       legend: { live: true },
-      scales: { x: { time: false, range: () => [0, windowMs] }, y: { range: yRange } },
+      scales: { x: { time: false, range: () => [0, winMs[c]] }, y: { range: yRange(c) } },
       axes: [
-        { stroke: "#8696a8", grid: { stroke: "#1b2633", width: 1 }, ticks: { stroke: "#243244" },
-          splits: (u, i, min, max) => Array.from({ length: 9 }, (_, k) => min + k * (max - min) / 8),
-          values: (u, t) => t.map((x) => fmtT(x)) },
-        { stroke: "#8696a8", grid: { stroke: "#1b2633", width: 1 }, ticks: { stroke: "#243244" }, size: 58,
-          values: (u, t) => t.map((x) => fmt(x, Math.abs(x) >= 10 ? 0 : (Math.abs(x) >= 1 ? 1 : 2)) + " V") }
+        Object.assign({}, axis, { splits: (u, i, min, max) => Array.from({ length: 9 }, (_, k) => min + k * (max - min) / 8),
+          values: (u, t) => t.map((x) => fmtT(x)) }),
+        Object.assign({}, axis, { size: 60, values: (u, t) => t.map((x) => fmt(x, Math.abs(x) >= 10 ? 0 : (Math.abs(x) >= 1 ? 1 : 2)) + " V") })
       ],
       series: [
         { label: "t", value: (u, v) => v == null ? "—" : fmtT(v) },
-        { label: "CH1", stroke: COLORS[0], width: 2, points: { show: false }, value: (u, v) => fmtV(v) },
-        { label: "CH2", stroke: COLORS[1], width: 2, points: { show: false }, value: (u, v) => fmtV(v) }
+        { label: "", stroke: col + "33", width: 7, points: { show: false }, value: () => "" },  /* resplandor */
+        { label: "CH" + (c + 1), stroke: col, width: 2, points: { show: false }, value: (u, v) => fmtV(v) }
       ],
       hooks: { draw: [zeroLine] }
     }, [[0, 1], [null, null], [null, null]], el);
-    [0, 1].forEach((c) => plot.setSeries(c + 1, { show: cfg.ch[c].show }));
+    /* ocultar la entrada de leyenda del resplandor */
+    const legendRows = el.querySelectorAll(".u-legend .u-series");
+    if (legendRows[1]) legendRows[1].style.display = "none";
+  }
+
+  /* ---------- Paneles de canal ---------- */
+  function buildChannels() {
+    let h = "";
+    for (let c = 0; c < 2; c++) {
+      h += '<section class="card chan" id="chan' + c + '" style="--c:' + COLORS[c] + '">' +
+        '<div class="chan-head">' +
+          '<div class="chan-title"><label class="switch" title="Encender o apagar la adquisición de este canal">' +
+            '<input type="checkbox" id="on' + c + '" checked><span></span></label>' +
+            '<span class="name">CH' + (c + 1) + '</span><span class="sub">GPIO' + (c + 1) + '</span>' +
+            '<span class="tag" id="tag' + c + '">—</span></div>' +
+          '<div class="chan-ctrl"><div class="seg" id="seg' + c + '" title="Frecuencia de muestreo (Sa/s)">' +
+            PRESETS.map((p) => '<button data-ch="' + c + '" data-p="' + p.id + '">' + p.label + "</button>").join("") +
+          "</div></div>" +
+        "</div>" +
+        '<div class="plotwrap"><div id="plot' + c + '"></div><div class="offmask">Canal apagado<br><span style="font-size:12px">No se adquiere: el otro canal se refresca más rápido.</span></div></div>' +
+        '<div class="chan-foot">' +
+          '<div class="mgrid" id="meas' + c + '"></div>' +
+          '<div class="advice off" id="adv' + c + '">—</div>' +
+          '<div class="opts"><label>Entrada</label><select id="mode' + c + '">' +
+            Object.keys(MODES).map((k) => '<option value="' + k + '">' + MODES[k].name + "</option>").join("") + "</select>" +
+            '<span id="custom' + c + '"></span>' +
+            '<button class="btn" id="zero' + c + '" title="Con la entrada unida a GND">Calibrar cero</button>' +
+            '<button class="btn" id="unzero' + c + '">Quitar calibración</button>' +
+            '<span class="note" style="margin:0" id="fsNote' + c + '"></span></div>' +
+        "</div></section>";
+    }
+    $("channels").innerHTML = h;
+
+    for (let c = 0; c < 2; c++) {
+      mkPlot(c);
+      $("on" + c).addEventListener("change", (e) => post("/api/channel?ch=" + (c + 1) + "&on=" + (e.target.checked ? 1 : 0)));
+      $("seg" + c).querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+        const v1 = last && last.version === 1;
+        post(v1 ? "/api/preset?id=" + b.dataset.p : "/api/preset?ch=" + (c + 1) + "&id=" + b.dataset.p);
+      }));
+      $("mode" + c).value = cfg.ch[c].mode;
+      $("mode" + c).addEventListener("change", (e) => { cfg.ch[c].mode = e.target.value; cfg.ch[c].cal = 0; save(); syncChannelOpts(c); if (last) render(last); });
+      $("zero" + c).addEventListener("click", () => {
+        if (!last) return;
+        const codes = c === 0 ? last.ch1 : last.ch2, p = chParams(c);
+        const meanAdc = codes.reduce((a, b) => a + b, 0) / codes.length * (last.vfs_mv / 1000) / 4095;
+        cfg.ch[c].cal = meanAdc - p.offset; save(); syncChannelOpts(c); render(last);
+      });
+      $("unzero" + c).addEventListener("click", () => { cfg.ch[c].cal = 0; save(); syncChannelOpts(c); if (last) render(last); });
+      syncChannelOpts(c);
+    }
+  }
+  function syncChannelOpts(c) {
+    const ch = cfg.ch[c];
+    $("unzero" + c).disabled = !ch.cal;
+    $("zero" + c).textContent = ch.cal ? "Recalibrar cero" : "Calibrar cero";
+    $("custom" + c).innerHTML = ch.mode === "custom"
+      ? '<label>Desplaz. (V)</label> <input type="number" step="0.001" id="off' + c + '" value="' + ch.offset + '"> ' +
+        '<label>Ganancia</label> <input type="number" step="0.0001" id="gain' + c + '" value="' + ch.gain + '">'
+      : "";
+    if (ch.mode === "custom") {
+      const upd = () => {
+        const o = parseFloat(String($("off" + c).value).replace(",", ".")), g = parseFloat(String($("gain" + c).value).replace(",", "."));
+        if (isFinite(o)) ch.offset = o;
+        if (isFinite(g) && g !== 0) ch.gain = g;
+        save(); if (last) render(last);
+      };
+      $("off" + c).addEventListener("change", upd); $("gain" + c).addEventListener("change", upd);
+    }
   }
 
   /* ---------- Render ---------- */
+  function cell(k, v, hl) { return '<div class="m' + (hl ? " hl" : "") + '"><div class="k">' + k + '</div><div class="v">' + v + "</div></div>"; }
   function render(d) {
-    const n = d.ch1.length, fs = d.fs, dtMs = 1000 / fs;
-    const t = Array.from({ length: n }, (_, i) => i * dtMs);
-    const v = [toVolts(d.ch1, d.vfs_mv / 1000, 0), toVolts(d.ch2, d.vfs_mv / 1000, 1)];
-    windowMs = n * dtMs;
-    plot.setData([t, v[0], v[1]]);
+    const n = d.ch1.length, v1 = d.version === 1;
+    const chans = d.channels || [{ on: true, fs: d.fs, preset: d.preset }, { on: true, fs: d.fs, preset: d.preset }];
+    const codes = [d.ch1, d.ch2];
 
-    $("hFs").textContent = fmtFs(fs);
-    $("hTw").textContent = fmtT(n * dtMs);
     $("hSeq").textContent = d.seq;
-    $("scopeMeta").textContent = n + " muestras por canal · " + d.bits + " bits · Δt = " + fmtT(dtMs) + " · 8 divisiones de " + fmtT(n * dtMs / 8);
-    document.querySelectorAll("#presets .btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.p) === d.preset));
-    document.querySelectorAll("#refresh .btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.hz) === d.refresh_hz));
+    $("hHz").textContent = fmt(d.refresh_hz, 2) + " Hz";
+    const on = chans.map((x) => x.on);
+    const modeTxt = !on[0] && !on[1] ? "apagada" : (on[0] && on[1] ? (d.aligned ? "sincronizada" : "independiente") : "un canal");
+    $("hMode").textContent = modeTxt;
 
-    let html = "";
     for (let c = 0; c < 2; c++) {
-      const m = measure(v[c], fs), a = advice(m, fs, n), ch = cfg.ch[c];
-      html += '<section class="card"><h2 style="display:flex;justify-content:space-between">' +
-        '<span><span class="swatch" style="display:inline-block;background:' + COLORS[c] + ';margin-right:8px;vertical-align:3px"></span>CH' + (c + 1) +
-        ' · GPIO' + (c + 1) + '</span><span style="text-transform:none;letter-spacing:0">' + MODES[ch.mode].name + (ch.cal ? " · calibrado" : "") + '</span></h2>' +
-        '<div class="mgrid">' +
-        cell("Mínimo", fmtV(m.mn)) + cell("Máximo", fmtV(m.mx)) + cell("Pico a pico", fmtV(m.pp)) +
-        cell("Media", fmtV(m.mean)) + cell("RMS (AC)", fmtV(m.ac)) + cell("Frecuencia", fmtHz(m.f)) +
-        '</div><div class="advice ' + a.cls + '">' + a.txt + '</div></section>';
+      const ch = chans[c], fs = ch.fs, dtMs = 1000 / fs, panel = $("chan" + c);
+      panel.classList.toggle("off", !ch.on);
+      $("on" + c).checked = ch.on;
+      $("on" + c).disabled = v1;
+      const tag = $("tag" + c);
+      if (!ch.on) { tag.className = "tag offt"; tag.textContent = "apagado"; }
+      else if (on[0] && on[1] && d.aligned) { tag.className = "tag sync"; tag.textContent = "sincronizado"; }
+      else { tag.className = "tag ind"; tag.textContent = fmtFs(fs); }
+      $("seg" + c).querySelectorAll("button").forEach((b) => {
+        const p = Number(b.dataset.p);
+        b.classList.toggle("active", p === ch.preset);
+        b.disabled = v1 && p === 4;
+      });
+      $("fsNote" + c).textContent = fmtFs(fs) + " · Δt " + fmtT(dtMs) + " · ventana " + fmtT(n * dtMs) + " (8 div. de " + fmtT(n * dtMs / 8) + ")";
+
+      winMs[c] = n * dtMs;
+      const t = Array.from({ length: n }, (_, i) => i * dtMs);
+      const v = toVolts(codes[c], d.vfs_mv / 1000, c);
+      plots[c].setData([t, v, v]);
+
+      if (!ch.on) {
+        $("meas" + c).innerHTML = "";
+        const a = $("adv" + c); a.className = "advice off"; a.innerHTML = "Canal apagado.";
+        continue;
+      }
+      const m = measure(v, fs), a = advice(m, fs, n);
+      $("meas" + c).innerHTML = cell("Mínimo", fmtV(m.mn)) + cell("Máximo", fmtV(m.mx)) + cell("Pico a pico", fmtV(m.pp), true) +
+        cell("Media", fmtV(m.mean)) + cell("RMS (AC)", fmtV(m.ac)) + cell("Frecuencia", fmtHz(m.f), true);
+      const adv = $("adv" + c);
+      adv.className = "advice " + a.cls;
+      adv.innerHTML = "<span>" + a.txt + "</span>" + (a.rec ? '<button class="btn" data-apply="' + c + '" data-p="' + a.rec.id + '">Aplicar ' + fmtFs(a.rec.fs) + "</button>" : "");
+      const ap = adv.querySelector("[data-apply]");
+      if (ap) ap.addEventListener("click", () => post(v1 ? "/api/preset?id=" + ap.dataset.p : "/api/preset?ch=" + (c + 1) + "&id=" + ap.dataset.p));
     }
-    $("meas").innerHTML = html;
+
+    const ai = $("acqInfo");
+    if (v1) ai.innerHTML = "<b>Firmware anterior (formato v1)</b>Un solo preset para ambos canales; cargue el firmware nuevo para el control por canal.";
+    else if (!on[0] && !on[1]) ai.innerHTML = "<b>Ambos canales apagados</b>Encienda un canal para adquirir.";
+    else if (on[0] && on[1] && d.aligned) ai.innerHTML = "<b>Canales sincronizados</b>Misma ráfaga y misma frecuencia (" + fmtFs(chans[0].fs) + "); CH2 se muestrea un intervalo de conversión después de CH1.";
+    else if (on[0] && on[1]) ai.innerHTML = "<b>Canales independientes</b>CH1 a " + fmtFs(chans[0].fs) + " y CH2 a " + fmtFs(chans[1].fs) + ", adquiridos uno después del otro: sus ventanas no están alineadas en el tiempo.";
+    else ai.innerHTML = "<b>Un solo canal</b>CH" + (on[0] ? 1 : 2) + " a " + fmtFs(chans[on[0] ? 0 : 1].fs) + "; con un canal se admite hasta 83,3 kSa/s.";
+    $("btnSync").disabled = v1 || !(on[0] && on[1]) || d.aligned || chans[0].preset === 4;
+
+    document.querySelectorAll("#refresh .btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.hz) === d.refresh_hz));
 
     const s = d.stats;
     const rows = [
       ["Ventanas recibidas", s.windows], ["Ventanas no leídas", s.lost], ["Errores de CRC", s.crc_err],
       ["Errores de sincronía", s.sync_err], ["Reinicios del ESP32-S3", s.esp_resets != null ? s.esp_resets : "—"],
-      ["Reloj SPI", (s.spi_hz / 1e6).toFixed(1).replace(".", ",") + " MHz"],
-      ["Tiempo por transacción", fmt(s.seg_avg_us, 1) + " µs"]
+      ["Comandos sin confirmar", s.cmd_timeout != null ? s.cmd_timeout : "—"],
+      ["Reloj SPI", fmt(s.spi_hz / 1e6, 1) + " MHz"], ["Tiempo por transacción", fmt(s.seg_avg_us, 1) + " µs"],
+      ["Formato de ventana", "v" + (d.version || 1)]
     ];
-    $("stats").innerHTML = rows.map((r) => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("");
-    renderFsInfo(fs, n);
+    $("stats").innerHTML = rows.map((r) => '<tr><td class="k">' + r[0] + "</td><td>" + r[1] + "</td></tr>").join("");
   }
-  function cell(k, v) { return '<div class="m"><div class="k">' + k + '</div><div class="v">' + v + "</div></div>"; }
-  function renderFsInfo(fs, n) {
-    const tw = n / fs * 1000;
-    $("fsInfo").innerHTML = "<h2>¿Qué señales se ven bien a " + fmtFs(fs) + "?</h2>" +
-      "<p>Límite teórico (Nyquist): señales de hasta <b>" + fmtHz(fs / 2) + "</b>. Por encima aparece <i>aliasing</i>: una frecuencia falsa.</p>" +
-      "<p>Para ver bien la <b>forma</b> de la onda: 8 a 32 muestras por período, es decir entre <b>" + fmtHz(fs / 32) + "</b> y <b>" + fmtHz(fs / 8) + "</b> (2 a 8 períodos en la ventana de " + fmtT(tw) + ").</p>" +
-      "<p>Tasas disponibles: " + PRESETS.map((p) => p.label + " → hasta " + fmtHz(p.fs / 8)).join(" · ") + ".</p>" +
-      "<p style='color:var(--mut)'>El ESP32-S3 no tiene filtro antialiasing: si la frecuencia medida cambia al subir la tasa de muestreo, la anterior era un alias.</p>";
+  function renderFsTable() {
+    $("fsTable").innerHTML = "<tr><th>Preset</th><th>Ventana</th><th>Señales</th></tr>" +
+      PRESETS.map((p) => "<tr><td>" + fmtFs(p.fs) + (p.id === 4 ? "*" : "") + "</td><td>" + fmtT(64000 / p.fs) + "</td><td>" + fmtHz(p.fs / 32) + " – " + fmtHz(p.fs / 8) + "</td></tr>").join("") +
+      '<tr><td colspan="3" class="k">* 83,3 kSa/s: un canal por ráfaga (máximo del ADC).</td></tr>';
   }
 
-  /* ---------- Controles ---------- */
-  function buildControls() {
-    $("presets").innerHTML = PRESETS.map((p) => '<button class="btn" data-p="' + p.id + '">' + p.label + "</button>").join("");
+  /* ---------- Controles globales ---------- */
+  function buildGlobal() {
     $("refresh").innerHTML = REFRESH.map((hz) => '<button class="btn" data-hz="' + hz + '">' + String(hz).replace(".", ",") + " Hz</button>").join("");
-    $("presetHint").textContent = "Ventana de 64 muestras por canal; el cambio se aplica en la ventana siguiente.";
-    document.querySelectorAll("#presets .btn").forEach((b) => b.addEventListener("click", () => post("/api/preset?id=" + b.dataset.p)));
     document.querySelectorAll("#refresh .btn").forEach((b) => b.addEventListener("click", async () => {
       await post("/api/refresh?hz=" + b.dataset.hz); refreshHz = Number(b.dataset.hz); schedule(); poll();
     }));
@@ -360,63 +466,27 @@
       cfg.yMode = b.dataset.y; save(); syncY(); if (last) render(last);
     }));
     syncY();
-    buildChannels();
+    $("btnSync").addEventListener("click", () => { if (last && last.channels) post("/api/preset?ch=2&id=" + last.channels[0].preset); });
     $("btnPause").addEventListener("click", () => {
       paused = !paused; $("btnPause").textContent = paused ? "Reanudar" : "Pausar";
       $("btnPause").classList.toggle("active", paused); if (!paused) poll(); setStatus();
     });
     $("btnCsv").addEventListener("click", exportCsv);
+    renderFsTable();
   }
   function syncY() { document.querySelectorAll("[data-y]").forEach((b) => b.classList.toggle("active", b.dataset.y === cfg.yMode)); }
-  function buildChannels() {
-    let h = "";
-    for (let c = 0; c < 2; c++) {
-      const ch = cfg.ch[c];
-      h += '<div class="ch"><div class="ch-head"><span class="ch-name"><span class="swatch" style="background:' + COLORS[c] + '"></span>CH' + (c + 1) +
-        ' <span style="color:var(--mut);font-weight:400">GPIO' + (c + 1) + '</span></span>' +
-        '<label class="switch"><input type="checkbox" data-show="' + c + '"' + (ch.show ? " checked" : "") + "><span></span></label></div>" +
-        '<select data-mode="' + c + '">' + Object.keys(MODES).map((k) => '<option value="' + k + '"' + (k === ch.mode ? " selected" : "") + ">" + MODES[k].name + "</option>").join("") + "</select>" +
-        (ch.mode === "custom"
-          ? '<div class="row"><div><label class="f">Desplazamiento (V)</label><input type="number" step="0.001" data-off="' + c + '" value="' + ch.offset + '"></div>' +
-            '<div><label class="f">Ganancia</label><input type="number" step="0.0001" data-gain="' + c + '" value="' + ch.gain + '"></div></div>'
-          : "") +
-        '<div class="row"><button class="btn small" data-zero="' + c + '">Calibrar cero</button>' +
-        '<button class="btn small" data-unzero="' + c + '"' + (ch.cal ? "" : " disabled") + ">Quitar calibración</button></div></div>";
-    }
-    h += '<div class="hint">El ADC solo mide de 0 a 3,1 V. Para tensiones negativas use el acondicionador (±5 V) y luego «Calibrar cero» con la entrada a GND.</div>';
-    $("chanCfg").innerHTML = h;
-    document.querySelectorAll("[data-show]").forEach((e) => e.addEventListener("change", () => {
-      const c = Number(e.dataset.show); cfg.ch[c].show = e.checked; save(); plot.setSeries(c + 1, { show: e.checked }); if (last) render(last);
-    }));
-    document.querySelectorAll("[data-mode]").forEach((e) => e.addEventListener("change", () => {
-      const c = Number(e.dataset.mode); cfg.ch[c].mode = e.value; cfg.ch[c].cal = 0; save(); buildChannels(); if (last) render(last);
-    }));
-    document.querySelectorAll("[data-off],[data-gain]").forEach((e) => e.addEventListener("change", () => {
-      const c = Number(e.dataset.off != null ? e.dataset.off : e.dataset.gain), val = parseFloat(String(e.value).replace(",", "."));
-      if (!isFinite(val) || (e.dataset.gain != null && val === 0)) return;
-      if (e.dataset.off != null) cfg.ch[c].offset = val; else cfg.ch[c].gain = val;
-      save(); if (last) render(last);
-    }));
-    document.querySelectorAll("[data-zero]").forEach((e) => e.addEventListener("click", () => {
-      if (!last) return;
-      const c = Number(e.dataset.zero), codes = c === 0 ? last.ch1 : last.ch2, p = chParams(c);
-      const meanAdc = codes.reduce((a, b) => a + b, 0) / codes.length * (last.vfs_mv / 1000) / 4095;
-      cfg.ch[c].cal = meanAdc - p.offset; save(); buildChannels(); render(last);
-    }));
-    document.querySelectorAll("[data-unzero]").forEach((e) => e.addEventListener("click", () => {
-      const c = Number(e.dataset.unzero); cfg.ch[c].cal = 0; save(); buildChannels(); if (last) render(last);
-    }));
-  }
   function exportCsv() {
     if (!last) return;
-    const v1 = toVolts(last.ch1, last.vfs_mv / 1000, 0), v2 = toVolts(last.ch2, last.vfs_mv / 1000, 1);
-    let csv = "t_ms,ch1_V,ch2_V,ch1_codigo,ch2_codigo\n";
+    const chans = last.channels || [{ fs: last.fs }, { fs: last.fs }];
+    const v = [toVolts(last.ch1, last.vfs_mv / 1000, 0), toVolts(last.ch2, last.vfs_mv / 1000, 1)];
+    let csv = "i,t1_ms,ch1_V,ch1_codigo,t2_ms,ch2_V,ch2_codigo\n";
     for (let i = 0; i < last.ch1.length; i++) {
-      csv += (i * 1000 / last.fs).toFixed(4) + "," + v1[i].toFixed(4) + "," + v2[i].toFixed(4) + "," + last.ch1[i] + "," + last.ch2[i] + "\n";
+      csv += i + "," + (i * 1000 / chans[0].fs).toFixed(4) + "," + v[0][i].toFixed(4) + "," + last.ch1[i] + "," +
+        (i * 1000 / chans[1].fs).toFixed(4) + "," + v[1][i].toFixed(4) + "," + last.ch2[i] + "\n";
     }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "ventana_" + last.seq + "_" + last.fs + "Sa.csv";
+    a.download = "ventana_" + last.seq + ".csv";
     a.click(); URL.revokeObjectURL(a.href);
   }
 
@@ -445,14 +515,15 @@
   }
   function schedule() { if (timer) clearInterval(timer); timer = setInterval(poll, 1000 / refreshHz); }
   async function post(url) {
-    try { const r = await fetch(url, { method: "POST" }); if (!r.ok) throw new Error(); }
+    try { const r = await fetch(url, { method: "POST" }); if (!r.ok) throw new Error(); setTimeout(poll, 400); }
     catch (e) { setStatus("err"); }
   }
 
-  window.addEventListener("resize", () => plot && plot.setSize({ width: $("plot").clientWidth, height: plotHeight() }));
-  buildControls();
-  mkPlot();
-  renderFsInfo(100, 64);
+  window.addEventListener("resize", () => {
+    for (let c = 0; c < 2; c++) if (plots[c]) plots[c].setSize({ width: $("plot" + c).clientWidth, height: plotHeight() });
+  });
+  buildGlobal();
+  buildChannels();
   poll();
   schedule();
 })();

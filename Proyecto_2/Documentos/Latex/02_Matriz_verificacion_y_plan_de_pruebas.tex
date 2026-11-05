@@ -353,6 +353,30 @@ Tras las correcciones, un reinicio del servicio después de 20 s sin lecturas di
 
 Un cuarto defecto se encontró al preparar las pruebas manuales (Documento 7): si el ESP32-S3 se reinicia, su contador WSEQ vuelve a 0 y el servicio podía tomar las ventanas nuevas como «hacia atrás» y dejar de publicarlas. Ahora un salto hacia atrás de 16 o más ventanas se interpreta como reinicio del ESP32-S3: se acepta y se reenvía el preset elegido. Prueba: con el preset de 10\,000 Sa/s se reinició el ESP32-S3 por su línea de \emph{reset}; el servicio registró «ESP32 reiniciado (WSEQ 9028 $\rightarrow$ 0)», el ESP32-S3 volvió con el preset de 10\,000 Sa/s y la publicación continuó sin intervención (un segmento con CRC inválido durante el reinicio, descartado).
 
+\subsection{Muestreo independiente por canal y formato v2 (5 de noviembre de 2026)}
+
+Firmware con preset y activación por canal, formato de ventana versión 2 y preset de 83\,333 Sa/s. \texttt{oscd} con cola de comandos y compatibilidad v1/v2 (16 pruebas unitarias correctas en el host y en la Raspberry Pi).
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{5.6cm} p{2.6cm} p{2.6cm} p{3.8cm}@{}}
+\toprule
+\textbf{Configuración} & \textbf{Modo} & \textbf{Duración medida} & \textbf{Comentario} \\
+\midrule
+CH1 y CH2 a 10 kSa/s & sincronizado & 6{,}6 ms & 64 pares en una ráfaga \\
+Solo CH1 a 83\,333 Sa/s & un canal & 0{,}854 ms & $\approx$ 1\,130 ventanas/s \\
+CH1 y CH2 a 83\,333 Sa/s & independiente & 1{,}73 ms & dos ráfagas seguidas \\
+CH1 a 83\,333 Sa/s y CH2 a 100 Sa/s & independiente & 640{,}9 ms & domina la ventana lenta \\
+\bottomrule
+\end{tabular}
+\caption{Duración de la adquisición por configuración (contador de ciclos del ESP32-S3).}
+\end{table}
+
+\paragraph{Control por canal de extremo a extremo.} A través de la API publicada por Nginx se ejecutó la secuencia: ambos a 1 kSa/s (sincronizados), CH2 a 10 kSa/s (independientes), apagar CH2, CH1 a 83\,333 Sa/s, encender CH2 y volver a 1 kSa/s. Cada cambio se reflejó en \texttt{window.json} con el modo correcto, sin comandos pendientes ni vencidos. Con el firmware anterior (v1), un comando por canal venció a las 400 transacciones sin bloquear el siguiente comando.
+
+\paragraph{Señal de prueba en las entradas.} Durante estas pruebas las dos entradas tenían conectada una onda cuadrada de 500 Hz entre 0 V y 1{,}10 V, con 50\,\% de ciclo útil y en fase. El dashboard midió 499{,}5 Hz a 10 kSa/s (20 muestras por período, aviso verde). A 1 kSa/s midió 500 Hz con solo 2 muestras por período y mostró el aviso de riesgo de \emph{aliasing}, recomendando 10 kSa/s. A 100 Sa/s la señal aparece constante: 500 Hz es múltiplo de la frecuencia de muestreo y siempre se muestrea la misma fase, un ejemplo de \emph{aliasing}. Para el diagnóstico se agregó al monitor serie la tecla \texttt{d}, que resume las conversiones DMA crudas de la última ráfaga (canal, validez y ceros). Confirmó que todas las conversiones eran válidas y que los valores nulos eran el nivel bajo de la señal.
+
 \subsection{Hallazgo abierto sobre las entradas}
 
 Con las entradas sin una señal conocida, ambos canales muestran a 100 Sa/s un patrón periódico de 5 muestras entre 0 y 4095, compatible con entradas flotantes que captan la red eléctrica (alias de 20 Hz de un armónico de 120 Hz). UT-MCU-02 sigue pendiente: conectar GND, 3{,}3 V y un divisor a cada canal, con una tensión distinta en cada uno para confirmar el orden CH1/CH2.
