@@ -337,6 +337,27 @@ El pin cambia de estado cada 8 ms, de modo que el período es 16 ms ($f = 62{,}5
   \item \textbf{Criterio:} la página sigue «en vivo» y los errores de CRC permanecen en 0.
 \end{itemize}
 
+\subsection*{P-14. Mediciones automáticas del dashboard}
+\begin{itemize}
+  \item \textbf{Montaje:} onda cuadrada de 62{,}5 Hz (\texttt{-t 8ms}) en CH1, preset de 1 kSa/s.
+  \item \textbf{Esperado:} en la tarjeta de CH1, frecuencia $\approx$ 62{,}5 Hz, mínimo $\approx$ 0 V, máximo $\approx$ 3{,}1 V y el aviso verde «16 muestras por período». Con el preset de 100 Sa/s el aviso cambia a rojo (pocas muestras por período) y recomienda subir la tasa.
+  \item \textbf{Criterio:} frecuencia dentro de $\pm 10\,\%$ y recomendación coherente con la Tabla~\ref{tab:senal}.
+\end{itemize}
+
+\subsection*{P-15. Tensiones negativas (requiere el acondicionador)}
+\begin{itemize}
+  \item \textbf{Montaje:} acondicionador de 18 k$\Omega$ / 10 k$\Omega$ / 18 k$\Omega$ (Documento 1) entre la señal y CH1. En el dashboard, CH1 en modo «$\pm 5$ V con acondicionador».
+  \item \textbf{Pasos:} (1) unir la entrada del acondicionador a GND y pulsar «Calibrar cero» en CH1; (2) conectar la entrada a $+3{,}3$ V (pin 3V3); (3) si hay fuente o generador bipolar, aplicar $-3$ V o una senoide de $\pm 3$ V.
+  \item \textbf{Esperado:} (1) CH1 en $\approx$ 0 V; (2) $\approx +3{,}3$ V; (3) $\approx -3$ V o la senoide centrada en 0 V con mínimo $\approx -3$ V.
+  \item \textbf{Criterio:} lecturas dentro de $\pm 0{,}3$ V. \textbf{No} conectar nunca una tensión negativa directamente a GPIO1 o GPIO2, sin el acondicionador.
+\end{itemize}
+
+\subsection*{P-16. Exportar CSV y pausa}
+\begin{itemize}
+  \item \textbf{Pasos:} pulsar «Pausar» (la gráfica se congela y el indicador dice «en pausa»), pulsar «Exportar CSV» y abrir el archivo en una hoja de cálculo; pulsar «Reanudar».
+  \item \textbf{Criterio:} el archivo tiene 64 filas con tiempo, tensiones y códigos de ambos canales, y la gráfica se reanuda.
+\end{itemize}
+
 % ============================================================
 \section{Con generador de funciones (opcional)}
 \label{sec:generador}
@@ -371,6 +392,9 @@ P-10 & Alias visible a 100 Sa/s & Frecuencia aparente: & \\[0.5cm]
 P-11 & Serie = dashboard & & \\[0.5cm]
 P-12 & Recupera sin intervención & a) \quad b) \quad c) & \\[0.5cm]
 P-13 & 10 min, CRC = 0 & CRC final: & \\[0.5cm]
+P-14 & Frecuencia $\pm 10\,\%$, aviso coherente & Frecuencia: & \\[0.5cm]
+P-15 & $\pm 0{,}3$ V (con acondicionador) & 0 V: \quad +3,3 V: \quad $-3$ V: & \\[0.5cm]
+P-16 & CSV de 64 filas; pausa y reanudación & & \\[0.5cm]
 \bottomrule
 \end{tabular}
 \caption{Registro de las pruebas manuales.}

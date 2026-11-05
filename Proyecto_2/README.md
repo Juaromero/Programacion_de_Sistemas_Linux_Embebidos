@@ -7,6 +7,30 @@ Osciloscopio de **2 canales**: una **ESP32-S3-DevKitC-1** (módulo WROOM-1 N8R2,
 * Captura por **refresco de ventanas**: el ESP32-S3 adquiere de forma continua; la Raspberry Pi toma la más reciente.
 * Refresco del dashboard configurable entre **0,25 Hz** (4 s) y **1 Hz**.
 * Enlace verificado a **20 MHz**: ~586 ventanas/s a 41 667 Sa/s, **0 errores de CRC** en 5 minutos.
+* Dashboard: mediciones automáticas (Vmín, Vmáx, Vpp, media, RMS, frecuencia), recomendación de tasa de muestreo, pausa, exportación a CSV y **tensiones negativas** con un acondicionador de entrada.
+
+## Tensiones negativas
+
+El ADC del ESP32-S3 solo mide de 0 a 3,1 V: **nunca conecte una tensión negativa directamente a GPIO1 o GPIO2**. Para señales de ±5 V use por canal este acondicionador y elija en el dashboard el modo «±5 V con acondicionador»:
+
+```
+ Vin ──[ R1 = 18 kΩ ]──┬──► GPIO1 / GPIO2 (ADC)
+                       ├──[ R2 = 10 kΩ ]── 3V3
+                       └──[ R3 = 18 kΩ ]── GND
+```
+
+V_ADC = 1,563 V + 0,2632 · Vin (±5 V → 0,25 a 2,88 V). Con la entrada a GND pulse «Calibrar cero» para compensar la tolerancia de las resistencias. Detalle en el Documento 1.
+
+## Frecuencia de muestreo recomendada
+
+| Preset | Ventana | Nyquist | Señales que se ven bien (8 a 32 muestras por período) |
+|---|---|---|---|
+| 100 Sa/s | 640 ms | 50 Hz | 3 a 12,5 Hz |
+| 1 kSa/s | 64 ms | 500 Hz | 31 a 125 Hz |
+| 10 kSa/s | 6,4 ms | 5 kHz | 313 Hz a 1,25 kHz |
+| 41,7 kSa/s | 1,5 ms | 20,8 kHz | 1,3 a 5,2 kHz |
+
+El dashboard estima la frecuencia de la señal y sugiere el preset adecuado. 41,7 kSa/s es el máximo del ADC con dos canales.
 
 ## Estructura
 

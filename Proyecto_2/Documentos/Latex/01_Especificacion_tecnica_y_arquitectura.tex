@@ -153,6 +153,71 @@ El servicio se implementa en \textbf{C}. A 41\,667 Sa/s el ESP32-S3 produce una 
 
 El dashboard usa \textbf{uPlot}: es una librería MIT de $\approx$ 50 KB, dibuja en \texttt{canvas} con el menor consumo de CPU entre las alternativas habituales y se sirve localmente desde la Raspberry Pi, cumpliendo RNF-07 (sin dependencias de servicios externos ni CDN).
 
+Funciones del dashboard: gráfica de los dos canales con 8 divisiones de tiempo exactas, línea de 0 V y lectura con cursor; selección de preset y de refresco; activación y modo de entrada de cada canal (directo, $\pm 5$ V con acondicionador o personalizado) con calibración de cero; escala vertical según el modo o automática; mediciones por canal (mínimo, máximo, pico a pico, media, RMS de la componente alterna y frecuencia por cruces con histéresis); recomendación de la frecuencia de muestreo; pausa; exportación de la ventana a CSV, y estadísticas del enlace SPI.
+
+\subsection{Medición de tensiones negativas}
+
+El ADC del ESP32-S3 solo convierte tensiones entre 0 y $\approx$ 3{,}1 V, y una tensión negativa en GPIO1 o GPIO2 puede dañar el chip. Para observar señales bipolares se antepone a cada canal un \textbf{acondicionador resistivo} que atenúa la señal y la desplaza al centro del rango del ADC; el dashboard deshace la transformación y muestra la tensión real de entrada.
+
+El nodo que va al ADC se une a la entrada por $R_1$, a 3{,}3 V por $R_2$ y a GND por $R_3$. Por superposición:
+
+\begin{equation}
+V_{ADC} = V_{off} + k\,V_{in}, \qquad
+k = \frac{1/R_1}{1/R_1 + 1/R_2 + 1/R_3}, \qquad
+V_{off} = 3{,}3\ \text{V}\cdot\frac{1/R_2}{1/R_1 + 1/R_2 + 1/R_3}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{6.0cm} p{6.0cm}@{}}
+\toprule
+\textbf{Parámetro} & \textbf{Valor} \\
+\midrule
+$R_1$ (entrada), $R_2$ (a 3{,}3 V), $R_3$ (a GND) & 18 k$\Omega$, 10 k$\Omega$, 18 k$\Omega$ \\
+Ganancia $k$ & 0{,}2632 \\
+Desplazamiento $V_{off}$ & 1{,}563 V \\
+$V_{in} = +5$ V $\rightarrow$ $V_{ADC}$ & 2{,}879 V \\
+$V_{in} = -5$ V $\rightarrow$ $V_{ADC}$ & 0{,}247 V \\
+Impedancia de entrada vista por la señal & $R_1 + R_2 \parallel R_3 \approx$ 24{,}4 k$\Omega$ \\
+Impedancia de salida hacia el ADC & $R_1 \parallel R_2 \parallel R_3 \approx$ 4{,}7 k$\Omega$ \\
+\bottomrule
+\end{tabular}
+\caption{Acondicionador para el modo $\pm 5$ V.}
+\end{table}
+
+El dashboard calcula $V_{in} = (V_{ADC} - V_{off} - V_{cal}) / k$. El término $V_{cal}$ lo fija el botón «Calibrar cero» con la entrada del acondicionador unida a GND, y corrige la tolerancia de las resistencias y el error de offset del ADC. Para otros rangos se usa el modo personalizado, introduciendo $V_{off}$ y $k$. La impedancia de entrada de $\approx$ 24 k$\Omega$ carga a fuentes de alta impedancia, lo que debe tenerse en cuenta al medir.
+
+\subsection{Elección de la frecuencia de muestreo}
+
+La frecuencia de muestreo adecuada depende de la señal. Con ventanas de 64 muestras rigen tres criterios:
+
+\begin{itemize}
+  \item \textbf{Nyquist:} solo se representan sin \emph{aliasing} señales de frecuencia menor que $f_s/2$.
+  \item \textbf{Forma de onda:} para reconocer la forma se necesitan unas 8 muestras por período o más.
+  \item \textbf{Duración de la ventana:} para ver al menos 2 períodos completos, $f \geq 2 f_s / 64 = f_s/32$.
+\end{itemize}
+
+Resulta un rango útil de $f_s/32$ a $f_s/8$ por preset:
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{2.4cm} p{2.6cm} p{3.0cm} p{4.6cm}@{}}
+\toprule
+\textbf{Preset} & \textbf{Ventana} & \textbf{Nyquist ($f_s/2$)} & \textbf{Rango útil ($f_s/32$ a $f_s/8$)} \\
+\midrule
+100 Sa/s     & 640 ms     & 50 Hz     & 3{,}1 Hz a 12{,}5 Hz \\
+1\,000 Sa/s  & 64 ms      & 500 Hz    & 31 Hz a 125 Hz \\
+10\,000 Sa/s & 6{,}4 ms   & 5 kHz     & 313 Hz a 1{,}25 kHz \\
+41\,667 Sa/s & 1{,}536 ms & 20{,}8 kHz & 1{,}3 kHz a 5{,}2 kHz \\
+\bottomrule
+\end{tabular}
+\caption{Rango de frecuencias de señal adecuado para cada preset.}
+\end{table}
+
+Los cuatro rangos cubren de forma casi continua de 3 Hz a 5 kHz. El preset de 41\,667 Sa/s es el máximo del ADC (83\,333 conversiones por segundo repartidas entre dos canales), de modo que no es posible muestrear más rápido con dos canales. El dashboard estima la frecuencia de la señal y recomienda el preset que da entre 8 y 32 muestras por período. El sistema no tiene filtro \emph{antialiasing}: una señal por encima de $f_s/2$ aparece con una frecuencia falsa. Se detecta subiendo la tasa de muestreo: si la frecuencia medida cambia, la anterior era un alias. Para mediciones rigurosas se recomienda un filtro RC paso bajo antes de cada entrada, con frecuencia de corte por debajo de $f_s/2$ del preset en uso.
+
 % ============================================================
 % 3. REQUERIMIENTOS
 % ============================================================
