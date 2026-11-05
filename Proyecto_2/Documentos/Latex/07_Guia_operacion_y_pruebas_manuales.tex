@@ -79,7 +79,7 @@ En el navegador del PC abrir:
 http://10.138.40.28/
 \end{verbatim}
 
-Si la dirección de la Raspberry Pi cambió, averiguarla por la consola UART o en el router; en la Raspberry Pi se obtiene con \texttt{hostname -I}.
+Si la dirección de la Raspberry Pi cambió, averiguarla por la consola UART (paso 4b) o en el router; en la Raspberry Pi se obtiene con \texttt{hostname -I}.
 
 El indicador superior debe decir \textbf{«en vivo»} y la tabla inferior debe mostrar el contador de ventanas recibidas aumentando y \textbf{0 errores de CRC}.
 
@@ -98,6 +98,68 @@ Los dos servicios deben aparecer \texttt{active (running)}. Si \texttt{oscd} no 
 
 \begin{verbatim}
 sudo systemctl restart oscd
+\end{verbatim}
+
+\subsection{Paso 4b (alternativa a SSH): consola de la Raspberry Pi por UART}
+
+Sirve cuando no hay red o no se conoce la dirección IP de la Raspberry Pi. Se usa un adaptador USB-UART CP2102 conectado así:
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}p{3.6cm} p{6.0cm}@{}}
+\toprule
+\textbf{Adaptador CP2102} & \textbf{Raspberry Pi 4 (pin físico)} \\
+\midrule
+TX  & Pin 10 (GPIO15 / RXD) \\
+RX  & Pin 8 (GPIO14 / TXD) \\
+GND & Pin 6 (GND) \\
+\bottomrule
+\end{tabular}
+\caption{Cableado de la consola UART. TX y RX se cruzan; no conectar los pines 5V ni 3V3 del adaptador.}
+\end{table}
+
+\paragraph{Opción A: desde WSL (no requiere instalar nada).}
+
+\begin{enumerate}
+  \item En PowerShell (no requiere administrador), identificar el adaptador y pasarlo a WSL. El BUSID es el de la línea \texttt{CP2102 USB to UART Bridge Controller}; si dice \emph{Not shared}, ejecutar una sola vez \texttt{usbipd bind --busid <BUSID>} en una PowerShell de administrador.
+\begin{verbatim}
+usbipd list
+usbipd attach --wsl --busid <BUSID>
+\end{verbatim}
+  \item En Ubuntu (WSL), abrir la terminal serie:
+\begin{verbatim}
+ls /dev/ttyUSB*
+picocom -b 115200 /dev/ttyUSB0
+\end{verbatim}
+  Si hay dos puertos, el de la Raspberry Pi es el que responde con \texttt{login:}; el otro es el ESP32-S3 (imprime líneas \texttt{STAT}).
+  \item Presionar \textbf{Enter}. Aparece:
+\begin{verbatim}
+Juaromero login:
+\end{verbatim}
+  Escribir el usuario \texttt{juaro} y la contraseña (no se ve al escribirla). Desde aquí se pueden ejecutar los mismos comandos del paso 4, por ejemplo:
+\begin{verbatim}
+hostname -I
+systemctl status oscd nginx --no-pager
+\end{verbatim}
+  \item Para terminar: \texttt{exit} (cierra la sesión de la Raspberry Pi) y luego \textbf{Ctrl+A} seguido de \textbf{Ctrl+X} (cierra picocom).
+  \item Devolver el adaptador a Windows:
+\begin{verbatim}
+usbipd detach --busid <BUSID>
+\end{verbatim}
+\end{enumerate}
+
+Con \texttt{screen} en lugar de picocom: \texttt{screen /dev/ttyUSB0 115200}; se sale con \textbf{Ctrl+A}, \textbf{K}, \textbf{Y}. No salir con \textbf{Ctrl+A}, \textbf{D}, porque eso deja la sesión abierta en segundo plano y bloquea el puerto.
+
+\paragraph{Opción B: desde Windows con PuTTY.} Instalar el controlador \emph{CP210x Universal Windows Driver} de Silicon Labs; reconectar el adaptador y anotar en el Administrador de dispositivos el puerto \texttt{COMx} asignado. En PuTTY elegir \emph{Serial}, ese puerto y velocidad 115200, y presionar Enter para ver el \texttt{login:}. El adaptador no puede estar adjunto a WSL al mismo tiempo.
+
+\paragraph{Configuración de la Raspberry Pi (ya aplicada).} La consola UART funciona porque en \texttt{/boot/firmware/config.txt} están \texttt{enable\_uart=1} y \texttt{dtoverlay=disable-bt}, y porque el servicio \texttt{serial-getty@ttyAMA0} está habilitado. Para desactivarla:
+\begin{verbatim}
+sudo systemctl disable --now serial-getty@ttyAMA0
+\end{verbatim}
+y para volver a activarla:
+\begin{verbatim}
+sudo systemctl enable --now serial-getty@ttyAMA0
 \end{verbatim}
 
 \subsection{Paso 5 (opcional): monitor serie del ESP32-S3}
@@ -333,6 +395,8 @@ Trazas con ruido de 0 a 3 V & Entrada sin conectar (flotante) & Es normal: conec
 La traza alta no corresponde al canal conectado & Cable en el pin equivocado & Revisar GPIO1 / GPIO2 en la cabecera derecha \\
 \texttt{Device or resource busy} en picocom & Otra terminal abierta en el puerto & \texttt{screen -r} o cerrar la otra terminal \\
 \texttt{gpioset}: \emph{line busy} & Otro \texttt{gpioset} sigue activo & Detenerlo con Ctrl+C o \texttt{pkill gpioset} \\
+Consola UART sin \texttt{login:} & TX y RX sin cruzar, falta GND o velocidad distinta de 115200 & Revisar el cableado del paso 4b y la velocidad \\
+CP2102 con error en Windows & Falta el controlador CP210x & Instalarlo o usar la opción A (WSL) \\
 \bottomrule
 \end{tabular}
 \caption{Problemas frecuentes.}
