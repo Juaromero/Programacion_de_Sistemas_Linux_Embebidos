@@ -1,10 +1,18 @@
 # Proyecto 2 — Osciloscopio: sistema híbrido de adquisición analógica por SPI y dashboard embebido en Linux
 
+## De qué trata el proyecto
+
+Es un **osciloscopio de 2 canales** hecho con un microcontrolador y una computadora embebida trabajando juntos. Una **ESP32-S3-DevKitC-1** programada con **Zephyr** mide dos señales analógicas con su ADC de 12 bits y las agrupa en ventanas de 64 muestras por canal. Esas ventanas viajan por **SPI** a una **Raspberry Pi 4 Model B**, que las revisa, guarda la más reciente y la muestra en una **página web** servida por **Nginx**, donde se ven las gráficas desde cualquier navegador de la red. Los datos también se pueden ver en el monitor serie de la ESP32-S3.
+
+Desde la página se elige la frecuencia de muestreo de cada canal (100, 1 000, 10 000 o 41 667 muestras por segundo, y 83 333 con un solo canal), se puede apagar cualquiera de los dos canales y la gráfica se actualiza entre una vez cada 4 segundos y una vez por segundo.
+
+## Circuito
+
 ![Circuito del proyecto: Raspberry Pi 4, ESP32-S3 por SPI y adaptador CP2102 para la consola UART](Imagenes/Circuito.png)
 
-*Circuito del sistema: la Raspberry Pi 4 (maestro SPI) lee las ventanas del ESP32-S3 (esclavo SPI) por GPIO10/11/12/13 ↔ pines 24/19/23/21 y GND. El adaptador CP2102 da acceso a la consola UART de la Raspberry Pi. La placa real es una ESP32-S3-DevKitC-1 (WROOM-1 N8R2); las entradas analógicas son CH1 = GPIO1 y CH2 = GPIO2.*
+*La Raspberry Pi 4 (maestro SPI) lee las ventanas del ESP32-S3 (esclavo SPI) por GPIO10/11/12/13 ↔ pines 24/19/23/21 y GND. El adaptador CP2102 da acceso a la consola UART de la Raspberry Pi. La placa real es una ESP32-S3-DevKitC-1 (WROOM-1 N8R2); las entradas analógicas son CH1 = GPIO1 y CH2 = GPIO2.*
 
-Osciloscopio de **2 canales**: una **ESP32-S3-DevKitC-1** programada con **Zephyr** digitaliza dos señales con su ADC de 12 bits y las entrega por **SPI** a una **Raspberry Pi 4 Model B**, que las publica en un **dashboard web** servido por **Nginx**. Las ventanas también se ven en el monitor serie del ESP32-S3.
+## Dashboard
 
 ![Dashboard con los dos canales sincronizados a 10 kSa/s midiendo una onda cuadrada de 500 Hz](Imagenes/Dashboard_sincronizado_10kSa.png)
 
