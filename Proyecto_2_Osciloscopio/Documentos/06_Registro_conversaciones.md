@@ -227,3 +227,18 @@ En turnos intermedios el usuario pidió volver a conectarse por UART y pegó un 
 | 3 | Renombre de la carpeta a `Proyecto_2_Osciloscopio` | Historial conservado con `git mv` |
 | 4 | Imagen del circuito al inicio del README del proyecto, seguida de la captura del dashboard | — |
 | 5 | Revisión de afirmaciones durante la conversión: la causa «primera conversión DMA en 0» quedó como hipótesis no confirmada, e IT-08 se mantuvo como parcial porque nadie pulsó los botones en un navegador | Documento 2 corregido |
+
+---
+
+## Turno 28 (5 de noviembre de 2026): video e integrantes
+
+**Usuario (literal, con los datos personales abreviados):**
+
+> Quiero que por ultimo pongas el video de funcionamiento link:https://youtu.be/xypH554IGnA?si=g1Wu67I74bOHGqBj . Ademas quiero que pongas estos participantes en la declaracion de participacion 1) Juan Felipe Pachon Restrepo CC.[…] 2) Juan David Romero Calderon CC.[…] 3) Sebastian Tovar Jimenez CC.[…] 4)Juan Pablo Vargas Córdoba CC.[…]
+
+*(Las cédulas completas están en el [Documento 4](04_Declaracion_participacion.md).)*
+
+| # | Acción | Resultado |
+|---|---|---|
+| 1 | Enlace al video en el README del proyecto, en la tabla de entregables y en `Video/README.md`, con miniatura | Entregable del video cubierto |
+| 2 | Nombres y cédulas en el Documento 4, en el Documento 1 y en el README; los roles se asignaron en el orden en que el usuario listó a los integrantes | Declaración de participación completa |

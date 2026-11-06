@@ -36,5 +36,5 @@ Cada proyecto contiene:
 | Proyecto | Descripción | Estado |
 |---|---|---|
 | [Proyecto_1](Proyecto_1/) | Por definir | Pendiente |
-| [Proyecto_2_Osciloscopio](Proyecto_2_Osciloscopio/) | **Sistema híbrido de adquisición analógica por SPI y dashboard embebido** (osciloscopio) | Funcional (pendientes: video y datos de los integrantes) |
+| [Proyecto_2_Osciloscopio](Proyecto_2_Osciloscopio/) | **Sistema híbrido de adquisición analógica por SPI y dashboard embebido** (osciloscopio) | Terminado ([video](https://youtu.be/xypH554IGnA)) |
 | [Proyecto_3](Proyecto_3/) | Por definir | Pendiente |

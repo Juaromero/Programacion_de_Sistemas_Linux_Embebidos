@@ -6,10 +6,10 @@ Materia: *Programación de sistemas Linux embebido* · Manizales, noviembre de 2
 
 | # | Integrante | C.C. | Rol técnico |
 |---|---|---|---|
-| 1 | _(completar)_ | _(completar)_ | Ingeniero de Documentación Técnica y Gestión de Configuración |
-| 2 | _(completar)_ | _(completar)_ | Arquitecto de Sistemas Embebidos |
-| 3 | _(completar)_ | _(completar)_ | Ingeniero de Software y Firmware Embebido |
-| 4 | _(completar)_ | _(completar)_ | Ingeniero de Verificación y Validación (V&V) |
+| 1 | Juan Felipe Pachón Restrepo | 1054542918 | Ingeniero de Documentación Técnica y Gestión de Configuración |
+| 2 | Juan David Romero Calderón | 1122510542 | Arquitecto de Sistemas Embebidos |
+| 3 | Sebastián Tovar Jiménez | 1104939220 | Ingeniero de Software y Firmware Embebido |
+| 4 | Juan Pablo Vargas Córdoba | 1076904755 | Ingeniero de Verificación y Validación (V&V) |
 
 **Contenido:** [1. Descripción](#1-descripción-del-proyecto) · [2. Decisiones de diseño](#2-decisiones-de-diseño) · [3. Requerimientos y restricciones](#3-requerimientos-y-restricciones) · [4. Protocolo](#4-protocolo-y-formato-de-trama) · [5. Estimación de la tasa SPI](#5-estimación-teórica-de-la-tasa-de-transferencia-spi) · [6. Diagramas de flujo](#6-diagramas-de-flujo)
 

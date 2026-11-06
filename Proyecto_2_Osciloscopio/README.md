@@ -10,6 +10,23 @@ Osciloscopio de **2 canales**: una **ESP32-S3-DevKitC-1** programada con **Zephy
 
 *Dashboard real en la Raspberry Pi: CH1 y CH2 sincronizados a 10 kSa/s con una onda cuadrada de 500 Hz. En [esta captura](Imagenes/Dashboard_independiente_10k_1k.png) los canales son independientes (10 kSa/s y 1 kSa/s) y CH2 avisa del riesgo de aliasing.*
 
+## Video del funcionamiento
+
+[![Video del funcionamiento del osciloscopio](https://img.youtube.com/vi/xypH554IGnA/hqdefault.jpg)](https://youtu.be/xypH554IGnA)
+
+*Haga clic en la imagen para ver el video en YouTube: https://youtu.be/xypH554IGnA*
+
+## Integrantes
+
+| # | Integrante | C.C. | Rol técnico |
+|---|---|---|---|
+| 1 | Juan Felipe Pachón Restrepo | 1054542918 | Ingeniero de Documentación Técnica y Gestión de Configuración |
+| 2 | Juan David Romero Calderón | 1122510542 | Arquitecto de Sistemas Embebidos |
+| 3 | Sebastián Tovar Jiménez | 1104939220 | Ingeniero de Software y Firmware Embebido |
+| 4 | Juan Pablo Vargas Córdoba | 1076904755 | Ingeniero de Verificación y Validación (V&V) |
+
+Actividades de cada uno en la [declaración de participación](Documentos/04_Declaracion_participacion.md).
+
 ## Características
 
 - Ventanas de **64 muestras por canal** con frecuencia de muestreo constante y captura por **refresco de ventanas**.
@@ -29,7 +46,7 @@ Osciloscopio de **2 canales**: una **ESP32-S3-DevKitC-1** programada con **Zephy
 | **Descripción detallada** con diagramas de bloques y de flujo | [Documento 1](Documentos/01_Especificacion_tecnica_y_arquitectura.md) (secciones 1, 2 y 6) · [Documento 3: protocolo SPI](Documentos/03_Protocolo_SPI.md) |
 | **Requerimientos y restricciones** | [Documento 1, sección 3](Documentos/01_Especificacion_tecnica_y_arquitectura.md#3-requerimientos-y-restricciones) |
 | **Matriz de verificación** con registro detallado de resultados | [Documento 2](Documentos/02_Matriz_verificacion_y_plan_de_pruebas.md) · [evidencias de las pruebas](Documentos/Resultados_Pruebas/) |
-| **Video** del funcionamiento | [Video/](Video/) — *pendiente de grabar* |
+| **Video** del funcionamiento | [Ver en YouTube](https://youtu.be/xypH554IGnA) · [Video/](Video/) |
 
 Toda la documentación está en Markdown y se lee directamente en GitHub, con tablas, ecuaciones y diagramas (Mermaid); no hay que compilar nada.
 
@@ -77,7 +94,7 @@ Proyecto_2_Osciloscopio/
 | Consola UART de la Raspberry Pi | Verificada |
 | Calibración del ADC con señales conocidas (UT-MCU-02) | Pendiente |
 | Reloj SPI real con analizador lógico (IT-03 a IT-06) | Pendiente |
-| Video | Pendiente |
+| Video del funcionamiento | [Publicado](https://youtu.be/xypH554IGnA) |
 
 Detalle completo en la [matriz de verificación](Documentos/02_Matriz_verificacion_y_plan_de_pruebas.md#2-matriz-de-verificación).
 

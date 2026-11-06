@@ -20,7 +20,7 @@ Universidad Nacional de Colombia — Sede Manizales · Programación de sistemas
 | Protocolo SPI | Propuso el formato de segmentos de 64 bytes tras comprobar en el código de Zephyr que el esclavo del ESP32-S3 usa FIFO (64 B por CS); luego la versión 2 con control por canal | Aprobar y ajustar |
 | Firmware del ESP32-S3 | Escribió el código (ADC con DMA, esclavo SPI, monitor serie, muestreo por canal), el overlay y la configuración; compiló y cargó la placa | Proveer el entorno y el hardware; cablear; revisar |
 | Software de la Raspberry Pi | Escribió el servicio en C, el dashboard, la configuración de Nginx y systemd; lo compiló, instaló y probó por SSH | Proveer acceso; revisar; conectar el ESP32-S3 |
-| Documentación | Redactó y reorganizó los documentos 1 a 6 (primero en LaTeX y luego en Markdown) y los README | Revisar; completar nombres, cédulas y aportes |
+| Documentación | Redactó y reorganizó los documentos 1 a 6 (primero en LaTeX y luego en Markdown) y los README | Revisar; aportar nombres, cédulas, roles y el video |
 | Pruebas | Diseñó la estrategia y ejecutó las pruebas de software, de integración y de estabilidad en el hardware real | Ejecutar las pruebas que requieren instrumentos (analizador lógico, señales conocidas) |
 | Repositorio | Creó la estructura de carpetas, el `.gitignore` y los commits | Autenticar y publicar en GitHub |
 
