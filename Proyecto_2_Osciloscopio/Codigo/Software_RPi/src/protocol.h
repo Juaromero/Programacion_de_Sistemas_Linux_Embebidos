@@ -1,7 +1,7 @@
 /*
  * Protocolo SPI RPi (maestro) <-> ESP32-S3 (esclavo).
  * Debe coincidir con Firmware_ESP32S3/src/protocol.h.
- * Especificacion: Documentos/Latex/03_Protocolo_SPI.tex
+ * Especificacion: Proyecto_2_Osciloscopio/Documentos/03_Protocolo_SPI.md
  */
 #ifndef OSC_PROTOCOL_H
 #define OSC_PROTOCOL_H

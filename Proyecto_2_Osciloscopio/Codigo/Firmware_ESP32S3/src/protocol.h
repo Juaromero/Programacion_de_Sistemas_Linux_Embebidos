@@ -1,6 +1,6 @@
 /*
  * Protocolo SPI ESP32-S3 (esclavo) <-> Raspberry Pi (maestro).
- * Especificacion completa: Osciloscopio/Documentos/Latex/03_Protocolo_SPI.tex
+ * Especificacion completa: Proyecto_2_Osciloscopio/Documentos/03_Protocolo_SPI.md
  *
  * El FIFO del esclavo SPI del ESP32-S3 en Zephyr admite 64 bytes por
  * activacion de CS, por lo que una ventana (280 bytes de "stream") viaja en

@@ -17,7 +17,7 @@ Repositorio de la materia **Programación de sistemas Linux embebido** (Ingenier
 ```
 Programacion_de_Sistemas_Linux_Embebidos/
 ├── Proyecto_1/    (pendiente)
-├── Osciloscopio/    Osciloscopio de 2 canales: ESP32-S3 + SPI + Raspberry Pi + dashboard
+├── Proyecto_2_Osciloscopio/   Osciloscopio de 2 canales: ESP32-S3 + SPI + Raspberry Pi + dashboard
 └── Proyecto_3/    (pendiente)
 ```
 
@@ -36,5 +36,5 @@ Cada proyecto contiene:
 | Proyecto | Descripción | Estado |
 |---|---|---|
 | [Proyecto_1](Proyecto_1/) | Por definir | Pendiente |
-| [Osciloscopio](Osciloscopio/) | **Sistema híbrido de adquisición analógica por SPI y dashboard embebido** (osciloscopio) | En desarrollo |
+| [Proyecto_2_Osciloscopio](Proyecto_2_Osciloscopio/) | **Sistema híbrido de adquisición analógica por SPI y dashboard embebido** (osciloscopio) | Funcional (pendientes: video y datos de los integrantes) |
 | [Proyecto_3](Proyecto_3/) | Por definir | Pendiente |

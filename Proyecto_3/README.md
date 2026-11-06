@@ -1,3 +1,3 @@
 # Proyecto 3
 
-Pendiente de definición. Seguirá la misma estructura que `Osciloscopio`: `Codigo/`, `Documentos/` e `Imagenes/`.
+Pendiente de definición. Seguirá la misma estructura que `Proyecto_2_Osciloscopio`: `Codigo/`, `Documentos/` e `Imagenes/`.

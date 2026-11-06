@@ -1,6 +1,6 @@
-# Instalación, configuración y uso — Osciloscopio
+# Instalación, configuración y uso — Proyecto 2: Osciloscopio
 
-Guía completa para poner en marcha el sistema desde cero: conexiones, firmware del ESP32-S3, software de la Raspberry Pi 4 y uso del dashboard. Para pruebas manuales con hoja de registro, ver el [Documento 7](Documentos/Latex/07_Guia_operacion_y_pruebas_manuales.tex).
+Guía completa para poner en marcha el sistema desde cero: conexiones, firmware del ESP32-S3, software de la Raspberry Pi 4 y uso del dashboard. La verificación del sistema está en el [Documento 2](Documentos/02_Matriz_verificacion_y_plan_de_pruebas.md).
 
 **Contenido**
 
@@ -59,7 +59,7 @@ usbipd attach --wsl --busid <BUSID del CP2102N>
 ```bash
 source ~/zephyrproject/.venv/bin/activate
 cd ~/zephyrproject
-APP=/mnt/c/Users/<usuario>/OneDrive/Desktop/Programacion_de_Sistemas_Linux_Embebidos/Osciloscopio/Codigo/Firmware_ESP32S3
+APP=/mnt/c/Users/<usuario>/OneDrive/Desktop/Programacion_de_Sistemas_Linux_Embebidos/Proyecto_2_Osciloscopio/Codigo/Firmware_ESP32S3
 west build -p auto -b esp32s3_devkitc/esp32s3/procpu "$APP" -d ~/build/osc
 west flash -d ~/build/osc --esp-device /dev/ttyUSB0
 ```
