@@ -18,24 +18,25 @@ Los integrantes declaran la participación y los aportes siguientes en el desarr
 
 ## Aportes detallados
 
-### Juan Felipe Pachón Restrepo — Ingeniero de Documentación Técnica y Gestión de Configuración
-- Coordinación del repositorio de Git y de su estructura según los entregables.
-- Redacción y mantenimiento de la documentación: descripción del proyecto, diagramas de bloques y de flujo, requerimientos, instrucciones de instalación y README.
-- Consolidación del video y de las declaraciones de participación y de uso de IA.
+### Juan Felipe Pachón Restrepo — Documentación y gestión del repositorio
+- Armé la estructura del repo y fui subiendo los cambios.
+- Hice los documentos y los diagramas, y los fui corrigiendo cuando cambiaba algo del diseño.
+- Junté el video y las declaraciones.
 
-### Juan David Romero Calderón — Arquitecto de Sistemas Embebidos
-- Definición de la arquitectura hardware/software (ESP32-S3 como esclavo SPI, Raspberry Pi 4 como maestro y servidor web).
-- Definición de las interfaces, el cableado y el protocolo SPI.
-- Estimación de las tasas máximas de transferencia con las hojas de datos; requerimientos y restricciones.
+### Juan David Romero Calderón — Arquitectura
+- Definí cómo se conectaban la ESP32 y la Raspberry y qué pines usar.
+- Diseñé la trama SPI y calculé las tasas teóricas con las hojas de datos.
+- Escribí los requerimientos y restricciones.
 
-### Sebastián Tovar Jiménez — Ingeniero de Software y Firmware Embebido
-- Firmware del ESP32-S3 en Zephyr: adquisición con el ADC, esclavo SPI, presets y monitor serie, y sus pruebas preliminares.
-- Software de la Raspberry Pi: servicio de adquisición, configuración de Nginx y `systemd`, y dashboard web.
+### Sebastián Tovar Jiménez — Software y firmware
+- Programé la ESP32 en Zephyr (ADC, SPI esclavo y monitor serie).
+- Hice el programa de la Raspberry, la página web y la configuración de Nginx y systemd.
+- Corregí los errores que fueron saliendo en las pruebas.
 
-### Juan Pablo Vargas Córdoba — Ingeniero de Verificación y Validación (V&V)
-- Diseño de experimentos y construcción de la matriz de verificación.
-- Ejecución de las pruebas unitarias en el SBC y en el microcontrolador.
-- Ejecución de las pruebas de integración y registro de los resultados.
+### Juan Pablo Vargas Córdoba — Pruebas
+- Armé la matriz de verificación y decidí qué probar y cómo.
+- Hice las pruebas de la ESP32 y de la Raspberry por separado y después las de todo el sistema.
+- Anoté los resultados y las evidencias de cada prueba.
 
 ## Apoyo de herramientas de inteligencia artificial
 
