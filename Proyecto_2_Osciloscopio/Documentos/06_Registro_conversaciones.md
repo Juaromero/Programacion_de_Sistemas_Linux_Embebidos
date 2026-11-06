@@ -5,7 +5,7 @@ Universidad Nacional de Colombia — Sede Manizales · Programación de sistemas
 
 ## Convención
 
-Herramienta: Claude Code. Modelos: Claude Sonnet 5.5 y Claude Opus 5.5. Los mensajes del usuario se transcriben **literalmente**; solo se retiraron las credenciales (indicado como `[omitido]`). Las respuestas del asistente se transcriben literalmente cuando se indica «literal»; en los demás casos se resumen fielmente. El trabajo con herramientas (lectura de archivos, comandos, compilación) se resume en tablas. La transcripción completa generada por la herramienta se obtiene con [`IA/exportar_chats.ps1`](IA/exportar_chats.ps1).
+Herramienta: Claude Code. Modelos: Claude Sonnet 5.5 y Claude Opus 5.5. Los mensajes del usuario se transcriben **literalmente**; solo se retiraron las credenciales (indicado como `[omitido]`). Las respuestas del asistente se transcriben literalmente cuando se indica «literal»; en los demás casos se resumen fielmente. El trabajo con herramientas (lectura de archivos, comandos, compilación) se resume en tablas.
 
 **Plantilla para nuevas sesiones**
 

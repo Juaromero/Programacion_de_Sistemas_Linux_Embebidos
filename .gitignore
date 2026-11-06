@@ -24,8 +24,6 @@ Proyecto_2_Osciloscopio/Video/*.mov
 Proyecto_2_Osciloscopio/Video/*.mkv
 Proyecto_2_Osciloscopio/Video/*.avi
 
-# Transcripciones crudas de IA (revisar y depurar antes de publicar)
-Proyecto_2_Osciloscopio/Documentos/IA/Transcripciones_crudas/
 
 # Sistema / editores
 .DS_Store

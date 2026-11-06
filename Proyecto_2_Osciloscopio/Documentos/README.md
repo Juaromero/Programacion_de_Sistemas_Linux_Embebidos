@@ -13,7 +13,6 @@ Todos los documentos están en Markdown y se leen directamente en GitHub (tablas
 
 Las instrucciones de instalación, configuración y uso están en [`../INSTALACION.md`](../INSTALACION.md).
 
-Otras carpetas:
+Otra carpeta:
 
 - [`Resultados_Pruebas/`](Resultados_Pruebas/): evidencia de cada prueba ejecutada, nombrada con el identificador de la matriz.
-- [`IA/`](IA/): `exportar_chats.ps1`, que copia las transcripciones completas de Claude Code a `IA/Transcripciones_crudas/`. Esa carpeta queda fuera de Git porque contiene rutas locales y metadatos que deben revisarse antes de publicarse.

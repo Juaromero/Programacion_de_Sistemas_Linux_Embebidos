@@ -44,7 +44,7 @@ Las afirmaciones sobre el hardware (límites del ADC, FIFO de 64 bytes del escla
 
 ## 4. Contenido de los chats
 
-El registro de las interacciones está en el [Documento 6](06_Registro_conversaciones.md). La transcripción completa generada por la herramienta se exporta con el script [`IA/exportar_chats.ps1`](IA/exportar_chats.ps1) a la carpeta `IA/Transcripciones_crudas/`, excluida de Git porque contiene rutas locales y metadatos que deben revisarse antes de publicarse. Se omitieron del registro las credenciales que el usuario compartió en el chat.
+El registro de las interacciones está en el [Documento 6](06_Registro_conversaciones.md). Se omitieron del registro las credenciales que el usuario compartió en el chat.
 
 ## 5. Responsabilidad
 

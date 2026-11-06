@@ -76,8 +76,7 @@ Proyecto_2_Osciloscopio/
 │       └── Makefile, install.sh
 ├── Documentos/
 │   ├── 01 … 06 *.md          Documentos del proyecto (Markdown)
-│   ├── Resultados_Pruebas/   Evidencias (logs) de cada prueba
-│   └── IA/                   Script para exportar las transcripciones de IA
+│   └── Resultados_Pruebas/   Evidencias (logs) de cada prueba
 ├── Imagenes/                 Circuito y capturas del dashboard
 └── Video/                    Video del funcionamiento
 ```
