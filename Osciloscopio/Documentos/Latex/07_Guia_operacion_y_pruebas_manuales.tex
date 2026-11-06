@@ -348,7 +348,7 @@ El pin cambia de estado cada 8 ms, de modo que el período es 16 ms ($f = 62{,}5
 \begin{itemize}
   \item \textbf{Montaje:} acondicionador de 18 k$\Omega$ / 10 k$\Omega$ / 18 k$\Omega$ (Documento 1) entre la señal y CH1. En el dashboard, CH1 en modo «$\pm 5$ V con acondicionador».
   \item \textbf{Pasos:} (1) unir la entrada del acondicionador a GND y pulsar «Calibrar cero» en CH1; (2) conectar la entrada a $+3{,}3$ V (pin 3V3); (3) si hay fuente o generador bipolar, aplicar $-3$ V o una senoide de $\pm 3$ V.
-  \item \textbf{Esperado:} (1) CH1 en $\approx$ 0 V; (2) $\approx +3{,}3$ V; (3) $\approx -3$ V o la senoide centrada en 0 V con mínimo $\approx -3$ V.
+  \item \textbf{Esperado:} (1) CH1 en $\approx$ 0 V; (2) $\approx +3{,}3$ V; (3) $\approx -3$ V o la senoide centrada en 0 V con mínimo $\approx -3$ V. Con la escala «±5 V» el eje va de $-5$ a $+5$ V en divisiones de 1 V; con «Automática» se ajusta a la señal incluyendo 0 V; con «Manual» se fijan mínimo y máximo.
   \item \textbf{Criterio:} lecturas dentro de $\pm 0{,}3$ V. \textbf{No} conectar nunca una tensión negativa directamente a GPIO1 o GPIO2, sin el acondicionador.
 \end{itemize}
 

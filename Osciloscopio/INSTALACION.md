@@ -119,6 +119,7 @@ Cada canal tiene su panel con:
 - **Interruptor:** enciende o apaga la adquisición del canal. El canal apagado no se adquiere y el otro se refresca más rápido.
 - **Preset propio:** 100, 1k, 10k, 41,7k y 83,3k Sa/s (este último solo con un canal por ráfaga).
 - **Gráfica y eje de tiempo propios**, con 8 divisiones exactas y línea de 0 V.
+- **Escala vertical propia** (selector «Escala»): **±5 V** (por defecto, 10 divisiones de 1 V con 0 V al centro), ±2,5 V, ±1 V, 0 a 3,3 V, **Automática** (se ajusta a la señal e incluye siempre 0 V, también con valores negativos) o **Manual** (mínimo y máximo en voltios). Los botones «±5 V» y «Automática» de la tarjeta *Pantalla* la aplican a ambos canales.
 - **Mediciones:** mínimo, máximo, pico a pico, media, RMS (AC) y frecuencia.
 - **Aviso de muestreo** (verde, amarillo o rojo) con botón para aplicar el preset recomendado.
 - **Modo de entrada:** directo (0–3,1 V), ±5 V con acondicionador o personalizado, con «Calibrar cero».
@@ -159,7 +160,7 @@ V_ADC = 1,563 V + 0,2632 · Vin (±5 V → 0,25 a 2,88 V). Con la entrada del ac
 
 ### 5.4 Otros controles
 
-Refresco de 0,25, 0,5 o 1 Hz; escala vertical según el modo o automática; **Pausar**; **Exportar CSV** (tiempo, tensión y código de cada canal).
+Refresco de 0,25, 0,5 o 1 Hz; escala vertical de ambos canales (±5 V o automática); **Pausar**; **Exportar CSV** (tiempo, tensión y código de cada canal).
 
 ## 6. Consola UART de la Raspberry Pi
 

@@ -44,6 +44,9 @@
   .tag.ind { color: #bfdbfe; border-color: #1e3a8a; background: #0f1a33; }
   .tag.offt { color: #fca5a5; border-color: #6b2626; background: #2a1414; }
   .chan-ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .ylab { color: var(--mut); font-size: 12px; margin-left: 4px; }
+  .man { color: var(--mut); font-size: 12px; }
+  .man input[type=number] { width: 66px; }
   .seg { display: inline-flex; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 2px; }
   .seg button { background: transparent; border: 0; color: var(--mut); padding: 5px 9px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12.5px; white-space: nowrap; }
   .seg button:hover:not(:disabled) { color: var(--fg); background: var(--panel3); }
@@ -132,9 +135,9 @@
       <h2>Pantalla</h2>
       <div class="note" style="margin:0 0 6px">Refresco</div>
       <div class="grid3" id="refresh"></div>
-      <div class="note" style="margin:10px 0 6px">Escala vertical</div>
+      <div class="note" style="margin:10px 0 6px">Escala vertical de ambos canales <span style="color:var(--dim)">(cada canal también tiene la suya)</span></div>
       <div class="grid2">
-        <button class="btn" data-y="mode">Según el modo</button>
+        <button class="btn" data-y="pm5">±5 V</button>
         <button class="btn" data-y="auto">Automática</button>
       </div>
       <div class="grid2" style="margin-top:10px">
@@ -177,7 +180,16 @@
     custom: { name: "Personalizado", offset: 0, gain: 1, range: null }
   };
   const COLORS = ["#f5b942", "#38bdf8"];
-  const STORE = "osc.cfg.v3";
+  const STORE = "osc.cfg.v4";
+  /* Escalas verticales por canal */
+  const SCALES = {
+    pm5:    { name: "±5 V",        range: [-5, 5] },
+    pm25:   { name: "±2,5 V",      range: [-2.5, 2.5] },
+    pm1:    { name: "±1 V",        range: [-1, 1] },
+    u33:    { name: "0 a 3,3 V",   range: [-0.2, 3.4] },
+    auto:   { name: "Automática",  range: null },
+    manual: { name: "Manual…",     range: null }
+  };
 
   const $ = (id) => document.getElementById(id);
   const fmt = (v, d) => (v == null || !isFinite(v)) ? "—" : v.toFixed(d).replace(".", ",");
@@ -188,13 +200,17 @@
   const presetByFs = (fs) => PRESETS.find((p) => p.fs === fs);
 
   let cfg = {
-    yMode: "mode",
     ch: [
-      { mode: "direct", offset: 0, gain: 1, cal: 0 },
-      { mode: "direct", offset: 0, gain: 1, cal: 0 }
+      { mode: "direct", offset: 0, gain: 1, cal: 0, scale: "pm5", ymin: -5, ymax: 5 },
+      { mode: "direct", offset: 0, gain: 1, cal: 0, scale: "pm5", ymin: -5, ymax: 5 }
     ]
   };
-  try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.ch && s.ch.length === 2) cfg = Object.assign(cfg, s); } catch (e) { /* sin configuración guardada */ }
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE));
+    if (s && s.ch && s.ch.length === 2) {
+      cfg.ch = cfg.ch.map((d, i) => Object.assign({}, d, s.ch[i]));
+    }
+  } catch (e) { /* sin configuración guardada */ }
   const save = () => localStorage.setItem(STORE, JSON.stringify(cfg));
 
   const plots = [null, null];
@@ -267,13 +283,31 @@
   /* ---------- Gráficas ---------- */
   function yRange(c) {
     return (u, min, max) => {
-      if (cfg.yMode === "mode") {
-        const r = MODES[cfg.ch[c].mode].range;
-        if (r) return r.slice();
+      const ch = cfg.ch[c], sc = SCALES[ch.scale] || SCALES.pm5;
+      if (sc.range) return sc.range.slice();
+      if (ch.scale === "manual" && isFinite(ch.ymin) && isFinite(ch.ymax) && ch.ymax > ch.ymin) {
+        return [ch.ymin, ch.ymax];
       }
+      /* Automática: se ajusta a la señal e incluye siempre 0 V (también con valores negativos) */
       if (min == null || max == null || !isFinite(min)) return [-1, 1];
-      const pad = Math.max((max - min) * 0.12, 0.05);
-      return [min - pad, max + pad];
+      const lo = Math.min(min, 0), hi = Math.max(max, 0);
+      const pad = Math.max((hi - lo) * 0.12, 0.1);
+      return [lo - pad, hi + pad];
+    };
+  }
+  /* Marcas del eje vertical: 10 divisiones exactas en las escalas ±X (como un osciloscopio);
+   * marcas "redondas" (1, 2, 2,5 o 5 x 10^n) en las demas */
+  function ySplits(c) {
+    return (u, i, min, max) => {
+      const sc = cfg.ch[c].scale;
+      if (sc === "pm5" || sc === "pm25" || sc === "pm1") {
+        return Array.from({ length: 11 }, (_, k) => min + k * (max - min) / 10);
+      }
+      const raw = (max - min) / 8, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p;
+      const step = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+      const out = [];
+      for (let v = Math.ceil(min / step - 1e-9) * step; v <= max + 1e-9; v += step) out.push(Math.abs(v) < 1e-9 ? 0 : v);
+      return out;
     };
   }
   function zeroLine(u) {
@@ -301,7 +335,8 @@
       axes: [
         Object.assign({}, axis, { splits: (u, i, min, max) => Array.from({ length: 9 }, (_, k) => min + k * (max - min) / 8),
           values: (u, t) => t.map((x) => fmtT(x)) }),
-        Object.assign({}, axis, { size: 60, values: (u, t) => t.map((x) => fmt(x, Math.abs(x) >= 10 ? 0 : (Math.abs(x) >= 1 ? 1 : 2)) + " V") })
+        Object.assign({}, axis, { size: 60, splits: ySplits(c),
+          values: (u, t) => t.map((x) => fmt(x, Math.abs(x) >= 10 ? 0 : (Number.isInteger(Math.round(x * 1000) / 1000) ? 0 : (Math.abs(Math.round(x * 10) - x * 10) < 1e-6 ? 1 : 2))) + " V") })
       ],
       series: [
         { label: "t", value: (u, v) => v == null ? "—" : fmtT(v) },
@@ -327,7 +362,10 @@
             '<span class="tag" id="tag' + c + '">—</span></div>' +
           '<div class="chan-ctrl"><div class="seg" id="seg' + c + '" title="Frecuencia de muestreo (Sa/s)">' +
             PRESETS.map((p) => '<button data-ch="' + c + '" data-p="' + p.id + '">' + p.label + "</button>").join("") +
-          "</div></div>" +
+          "</div>" +
+          '<label class="ylab" for="scale' + c + '">Escala</label><select id="scale' + c + '" title="Escala vertical">' +
+            Object.keys(SCALES).map((k) => '<option value="' + k + '">' + SCALES[k].name + "</option>").join("") +
+          '</select><span class="man" id="man' + c + '"></span></div>' +
         "</div>" +
         '<div class="plotwrap"><div id="plot' + c + '"></div><div class="offmask">Canal apagado<br><span style="font-size:12px">No se adquiere: el otro canal se refresca más rápido.</span></div></div>' +
         '<div class="chan-foot">' +
@@ -350,6 +388,16 @@
         const v1 = last && last.version === 1;
         post(v1 ? "/api/preset?id=" + b.dataset.p : "/api/preset?ch=" + (c + 1) + "&id=" + b.dataset.p);
       }));
+      $("scale" + c).value = cfg.ch[c].scale;
+      $("scale" + c).addEventListener("change", (e) => {
+        const ch = cfg.ch[c];
+        if (e.target.value === "manual" && ch.scale !== "manual") {
+          /* partir de lo que se ve ahora */
+          const s = plots[c].scales.y;
+          if (isFinite(s.min) && isFinite(s.max)) { ch.ymin = +s.min.toFixed(2); ch.ymax = +s.max.toFixed(2); }
+        }
+        ch.scale = e.target.value; save(); syncScale(c); syncY(); if (last) render(last);
+      });
       $("mode" + c).value = cfg.ch[c].mode;
       $("mode" + c).addEventListener("change", (e) => { cfg.ch[c].mode = e.target.value; cfg.ch[c].cal = 0; save(); syncChannelOpts(c); if (last) render(last); });
       $("zero" + c).addEventListener("click", () => {
@@ -360,7 +408,21 @@
       });
       $("unzero" + c).addEventListener("click", () => { cfg.ch[c].cal = 0; save(); syncChannelOpts(c); if (last) render(last); });
       syncChannelOpts(c);
+      syncScale(c);
     }
+  }
+  function syncScale(c) {
+    const ch = cfg.ch[c];
+    $("scale" + c).value = ch.scale;
+    const man = $("man" + c);
+    if (ch.scale !== "manual") { man.innerHTML = ""; return; }
+    man.innerHTML = '<input type="number" step="0.1" id="ymin' + c + '" value="' + ch.ymin + '" title="Mínimo (V)"> a ' +
+      '<input type="number" step="0.1" id="ymax' + c + '" value="' + ch.ymax + '" title="Máximo (V)"> V';
+    const upd = () => {
+      const lo = parseFloat(String($("ymin" + c).value).replace(",", ".")), hi = parseFloat(String($("ymax" + c).value).replace(",", "."));
+      if (isFinite(lo) && isFinite(hi) && hi > lo) { ch.ymin = lo; ch.ymax = hi; save(); if (last) render(last); }
+    };
+    $("ymin" + c).addEventListener("change", upd); $("ymax" + c).addEventListener("change", upd);
   }
   function syncChannelOpts(c) {
     const ch = cfg.ch[c];
@@ -463,7 +525,8 @@
       await post("/api/refresh?hz=" + b.dataset.hz); refreshHz = Number(b.dataset.hz); schedule(); poll();
     }));
     document.querySelectorAll("[data-y]").forEach((b) => b.addEventListener("click", () => {
-      cfg.yMode = b.dataset.y; save(); syncY(); if (last) render(last);
+      for (let c = 0; c < 2; c++) { cfg.ch[c].scale = b.dataset.y; syncScale(c); }
+      save(); syncY(); if (last) render(last);
     }));
     syncY();
     $("btnSync").addEventListener("click", () => { if (last && last.channels) post("/api/preset?ch=2&id=" + last.channels[0].preset); });
@@ -474,7 +537,10 @@
     $("btnCsv").addEventListener("click", exportCsv);
     renderFsTable();
   }
-  function syncY() { document.querySelectorAll("[data-y]").forEach((b) => b.classList.toggle("active", b.dataset.y === cfg.yMode)); }
+  function syncY() {
+    document.querySelectorAll("[data-y]").forEach((b) =>
+      b.classList.toggle("active", cfg.ch.every((ch) => ch.scale === b.dataset.y)));
+  }
   function exportCsv() {
     if (!last) return;
     const chans = last.channels || [{ fs: last.fs }, { fs: last.fs }];
